@@ -1,25 +1,20 @@
 using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class MainMenu : MonoBehaviour
 {
+    [SerializeField] private float fadeDuration = 1f;
+
     public void PlayGame()
     {
-
         StartCoroutine(FadeAndLoadScene(1));
-        SceneManager.LoadSceneAsync(1);
-
     }
 
     public void Credits()
     {
-
         StartCoroutine(FadeAndLoadScene(2));
-
-        SceneManager.LoadSceneAsync(2);
-
     }
 
     public void Exit()
@@ -27,40 +22,38 @@ public class MainMenu : MonoBehaviour
         Application.Quit();
     }
 
-
     IEnumerator FadeAndLoadScene(int sceneIndex)
     {
-        
+        // Create fade overlay
         GameObject fadeObject = new GameObject("FadeOverlay");
         Canvas canvas = fadeObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
         canvas.sortingOrder = 9999;
 
-        UnityEngine.UI.Image fadeImage = fadeObject.AddComponent<UnityEngine.UI.Image>();
+        Image fadeImage = fadeObject.AddComponent<Image>();
         fadeImage.color = new Color(0, 0, 0, 0);
 
-        
-        float alpha = 0f;
-        while (alpha < 1f)
+        // Fade in
+        float timer = 0f;
+        while (timer < fadeDuration)
         {
-            alpha += Time.deltaTime;
+            timer += Time.deltaTime;
+            float alpha = Mathf.Clamp01(timer / fadeDuration);
             fadeImage.color = new Color(0, 0, 0, alpha);
             yield return null;
         }
 
-        
+        // Start loading scene
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneIndex);
-        asyncLoad.allowSceneActivation = false; 
+        asyncLoad.allowSceneActivation = false;
 
-        while (!asyncLoad.isDone)
+        // Wait for scene to load
+        while (asyncLoad.progress < 0.9f)
         {
-            
-            if (asyncLoad.progress >= 0.9f)
-            {
-                asyncLoad.allowSceneActivation = true;
-            }
             yield return null;
         }
+
+        // Switch to the new scene
+        asyncLoad.allowSceneActivation = true;
     }
 }
-
