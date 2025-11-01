@@ -19,19 +19,16 @@ public class TypewriterEffect : MonoBehaviour
     [Header("UI References")]
     public TMP_Text dialogueText;
     public GameObject continuePrompt;
-    public AudioClip typingSound;
 
     [Header("Background")]
     public Image blackBackground;
 
-    private AudioSource audioSource;
     private int currentTextIndex = 0;
     private bool isTyping = false;
     private bool textComplete = false;
 
     void Start()
     {
-        audioSource = GetComponent<AudioSource>();
         continuePrompt.SetActive(false);
 
         SetupBlackBackground();
@@ -92,10 +89,6 @@ public class TypewriterEffect : MonoBehaviour
         foreach (char letter in textToType)
         {
             dialogueText.text += letter;
-
-            if (typingSound && audioSource)
-                audioSource.PlayOneShot(typingSound);
-
             yield return new WaitForSeconds(typingSpeed);
         }
 
@@ -168,18 +161,6 @@ public class TypewriterEffect : MonoBehaviour
 
     IEnumerator LoadSceneWithFade(int buildIndex)
     {
-        // Fade out audio if playing
-        if (audioSource != null && audioSource.isPlaying)
-        {
-            float startVolume = audioSource.volume;
-            while (audioSource.volume > 0)
-            {
-                audioSource.volume -= startVolume * Time.deltaTime / fadeDuration;
-                yield return null;
-            }
-            audioSource.Stop();
-        }
-
         // Fade out screen
         yield return StartCoroutine(FadeOut());
 
