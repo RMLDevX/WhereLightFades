@@ -14,7 +14,7 @@ public class MainMenu : MonoBehaviour
 
     public void Credits()
     {
-        StartCoroutine(FadeAndLoadScene(2));
+        StartCoroutine(FadeAndLoadScene(3));
     }
 
     public void Exit()
@@ -24,7 +24,7 @@ public class MainMenu : MonoBehaviour
 
     IEnumerator FadeAndLoadScene(int sceneIndex)
     {
-        // Create fade overlay
+        
         GameObject fadeObject = new GameObject("FadeOverlay");
         Canvas canvas = fadeObject.AddComponent<Canvas>();
         canvas.renderMode = RenderMode.ScreenSpaceOverlay;
@@ -33,7 +33,7 @@ public class MainMenu : MonoBehaviour
         Image fadeImage = fadeObject.AddComponent<Image>();
         fadeImage.color = new Color(0, 0, 0, 0);
 
-        // Fade in
+        
         float timer = 0f;
         while (timer < fadeDuration)
         {
@@ -43,17 +43,17 @@ public class MainMenu : MonoBehaviour
             yield return null;
         }
 
-        // Start loading scene
+        
         AsyncOperation asyncLoad = SceneManager.LoadSceneAsync(sceneIndex);
         asyncLoad.allowSceneActivation = false;
 
-        // Wait for scene to load
+        
         while (asyncLoad.progress < 0.9f)
         {
             yield return null;
         }
 
-        // Switch to the new scene
+        
         asyncLoad.allowSceneActivation = true;
     }
 }
