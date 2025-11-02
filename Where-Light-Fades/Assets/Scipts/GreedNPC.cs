@@ -1,6 +1,6 @@
 using UnityEngine;
 
-public class NPC : MonoBehaviour
+public class GreedNPC : MonoBehaviour
 {
     public string npcName = "Villager";
 

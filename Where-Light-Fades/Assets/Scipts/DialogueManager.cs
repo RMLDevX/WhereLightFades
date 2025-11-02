@@ -9,13 +9,20 @@ public class DialogueManager : MonoBehaviour
     public GameObject dialoguePanel;
     public TextMeshProUGUI dialogueText;
     public TextMeshProUGUI nameText;
-    public Image characterImage;
+    public Image leftCharacterImage;  // Player side
+    public Image rightCharacterImage; // NPC side
+
+    [Header("Default Sprites")]
+    public Sprite playerDefaultSprite;
+    public Sprite npcDefaultSprite;
 
     private List<string> currentDialogue;
+    private List<bool> currentSpeakers;
     private List<Sprite> currentEmotions;
     private int currentLine;
     private TutorialPlayerMovement playerMovement;
     private PlayerJump playerJump;
+    private string currentNPCName;
 
     void Awake()
     {
@@ -23,12 +30,13 @@ public class DialogueManager : MonoBehaviour
         dialoguePanel.SetActive(false);
     }
 
-    public void StartDialogue(string[] dialogue, string npcName, Sprite[] emotions = null)
+    public void StartDialogue(string[] dialogue, string npcName, bool[] speakers, Sprite[] emotions = null)
     {
         currentDialogue = new List<string>(dialogue);
+        currentSpeakers = speakers != null ? new List<bool>(speakers) : new List<bool>();
         currentEmotions = emotions != null ? new List<Sprite>(emotions) : new List<Sprite>();
+        currentNPCName = npcName;
         currentLine = 0;
-        nameText.text = npcName;
         dialoguePanel.SetActive(true);
 
         playerMovement = FindObjectOfType<TutorialPlayerMovement>();
@@ -46,15 +54,68 @@ public class DialogueManager : MonoBehaviour
         {
             dialogueText.text = currentDialogue[currentLine];
 
-            // Change image if available for this line
-            if (currentLine < currentEmotions.Count && currentEmotions[currentLine] != null)
+            // Determine who is speaking and update UI accordingly
+            bool isPlayerSpeaking = currentLine < currentSpeakers.Count ? currentSpeakers[currentLine] : false;
+
+            // Reset both images first
+            leftCharacterImage.gameObject.SetActive(false);
+            rightCharacterImage.gameObject.SetActive(false);
+
+            if (isPlayerSpeaking)
             {
-                characterImage.sprite = currentEmotions[currentLine];
-                characterImage.gameObject.SetActive(true);
+                // Player is speaking (left side) - No name displayed for player
+                nameText.text = ""; // Empty for player
+                nameText.color = Color.blue;
+
+                // Show player on left if we have a sprite
+                Sprite playerSprite = playerDefaultSprite;
+                if (currentLine < currentEmotions.Count && currentEmotions[currentLine] != null)
+                {
+                    playerSprite = currentEmotions[currentLine];
+                }
+
+                if (playerSprite != null)
+                {
+                    leftCharacterImage.sprite = playerSprite;
+                    leftCharacterImage.color = Color.white;
+                    leftCharacterImage.gameObject.SetActive(true);
+                }
+
+                // Show NPC on right (dimmed) if we have default NPC sprite
+                if (npcDefaultSprite != null)
+                {
+                    rightCharacterImage.sprite = npcDefaultSprite;
+                    rightCharacterImage.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+                    rightCharacterImage.gameObject.SetActive(true);
+                }
             }
             else
             {
-                characterImage.gameObject.SetActive(false);
+                // NPC is speaking (right side) - Show NPC name
+                nameText.text = currentNPCName;
+                nameText.color = Color.red;
+
+                // Show NPC on right if we have a sprite
+                Sprite npcSprite = npcDefaultSprite;
+                if (currentLine < currentEmotions.Count && currentEmotions[currentLine] != null)
+                {
+                    npcSprite = currentEmotions[currentLine];
+                }
+
+                if (npcSprite != null)
+                {
+                    rightCharacterImage.sprite = npcSprite;
+                    rightCharacterImage.color = Color.white;
+                    rightCharacterImage.gameObject.SetActive(true);
+                }
+
+                // Show player on left (dimmed) if we have default player sprite
+                if (playerDefaultSprite != null)
+                {
+                    leftCharacterImage.sprite = playerDefaultSprite;
+                    leftCharacterImage.color = new Color(0.5f, 0.5f, 0.5f, 0.7f);
+                    leftCharacterImage.gameObject.SetActive(true);
+                }
             }
 
             currentLine++;
