@@ -14,7 +14,7 @@ public class DialogueManager : MonoBehaviour
     private List<string> currentDialogue;
     private List<Sprite> currentEmotions;
     private int currentLine;
-    private PlayerMovement playerMovement;
+    private TutorialPlayerMovement playerMovement;
     private PlayerJump playerJump;
 
     void Awake()
@@ -31,7 +31,7 @@ public class DialogueManager : MonoBehaviour
         nameText.text = npcName;
         dialoguePanel.SetActive(true);
 
-        playerMovement = FindObjectOfType<PlayerMovement>();
+        playerMovement = FindObjectOfType<TutorialPlayerMovement>();
         playerJump = FindObjectOfType<PlayerJump>();
 
         if (playerMovement != null) playerMovement.SetMovement(false);
