@@ -19,9 +19,7 @@ public class TypewriterEffect : MonoBehaviour
     [Header("UI References")]
     public TMP_Text dialogueText;
     public GameObject continuePrompt;
-
-    [Header("Background")]
-    public Image blackBackground;
+    public Image backgroundImage; // Reference to your image
 
     private int currentTextIndex = 0;
     private bool isTyping = false;
@@ -31,47 +29,58 @@ public class TypewriterEffect : MonoBehaviour
     {
         continuePrompt.SetActive(false);
 
-        SetupBlackBackground();
+        // Make sure the background image is set up properly
+        SetupBackground();
         StartCoroutine(StartBackstorySequence());
     }
 
-    void SetupBlackBackground()
+    void SetupBackground()
     {
-        if (blackBackground == null)
+        // If you haven't assigned the background image in the inspector,
+        // try to find it or create a placeholder
+        if (backgroundImage == null)
         {
-            blackBackground = FindObjectOfType<Image>();
-            if (blackBackground == null)
+            // Try to find an existing Image component that's not the black background
+            Image[] images = FindObjectsOfType<Image>();
+            foreach (Image img in images)
             {
-                CreateBlackBackground();
+                if (img.gameObject.name != "BlackBackground")
+                {
+                    backgroundImage = img;
+                    break;
+                }
             }
         }
 
-        if (blackBackground != null)
+        // If we still don't have a background image, you might want to assign one
+        if (backgroundImage == null)
         {
-            blackBackground.color = Color.black;
-            RectTransform rect = blackBackground.GetComponent<RectTransform>();
-            if (rect != null)
-            {
-                rect.anchorMin = Vector2.zero;
-                rect.anchorMax = Vector2.one;
-                rect.offsetMin = Vector2.zero;
-                rect.offsetMax = Vector2.zero;
-            }
+            Debug.LogWarning("No background image found. Please assign one in the inspector.");
         }
+
+        // Remove or hide the black background if it exists
+        RemoveBlackBackground();
     }
 
-    void CreateBlackBackground()
+    void RemoveBlackBackground()
     {
-        GameObject bgObject = new GameObject("BlackBackground");
-        blackBackground = bgObject.AddComponent<Image>();
-        blackBackground.color = Color.black;
+        // Find and destroy the black background if it was created
+        GameObject blackBg = GameObject.Find("BlackBackground");
+        if (blackBg != null)
+        {
+            Destroy(blackBg);
+        }
 
-        RectTransform rect = bgObject.GetComponent<RectTransform>();
-        rect.anchorMin = Vector2.zero;
-        rect.anchorMax = Vector2.one;
-        rect.offsetMin = Vector2.zero;
-        rect.offsetMax = Vector2.zero;
-        rect.SetAsFirstSibling();
+        // Also check if there's a black background in the scene
+        Image[] allImages = FindObjectsOfType<Image>();
+        foreach (Image img in allImages)
+        {
+            if (img.color == Color.black && img.gameObject.name != "BackgroundImage")
+            {
+                // This might be our black background - disable or destroy it
+                img.gameObject.SetActive(false);
+            }
+        }
     }
 
     IEnumerator StartBackstorySequence()
