@@ -21,7 +21,6 @@ public class PlayerMovement : MonoBehaviour
 
     void SetupRigidbody()
     {
-        // REMOVE THIS LINE: rb.gravityScale = 0f;
         rb.freezeRotation = true;
         rb.collisionDetectionMode = CollisionDetectionMode2D.Continuous;
         rb.interpolation = RigidbodyInterpolation2D.Interpolate;
@@ -54,7 +53,7 @@ public class PlayerMovement : MonoBehaviour
     void HandleMovement()
     {
         targetVelocity.x = horizontalInput * moveSpeed;
-        targetVelocity.y = rb.velocity.y; // Preserve vertical velocity from jumping
+        targetVelocity.y = rb.velocity.y;
 
         rb.velocity = Vector2.Lerp(rb.velocity, targetVelocity, acceleration * Time.fixedDeltaTime);
 
@@ -65,5 +64,12 @@ public class PlayerMovement : MonoBehaviour
                 rb.velocity.y
             );
         }
+    }
+
+    // ADD THIS METHOD
+    public void SetMovement(bool state)
+    {
+        enabled = state;
+        if (!state) rb.velocity = new Vector2(0, rb.velocity.y);
     }
 }
