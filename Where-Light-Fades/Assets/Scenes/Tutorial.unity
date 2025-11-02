@@ -758,6 +758,7 @@ GameObject:
   - component: {fileID: 1441829312}
   - component: {fileID: 1441829314}
   - component: {fileID: 1441829315}
+  - component: {fileID: 1441829316}
   m_Layer: 0
   m_Name: MC
   m_TagString: Player
@@ -940,6 +941,30 @@ Animator:
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
   m_WriteDefaultValuesOnDisable: 0
+--- !u!114 &1441829316
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1441829309}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: b19153cd005561b468daca286a28fe88, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: 
+  jumpForce: 10
+  jumpTime: 0.3
+  coyoteTime: 0.1
+  jumpBufferTime: 0.1
+  groundCheckDistance: 0.2
+  maxGroundAngle: 45
+  groundLayer:
+    serializedVersion: 2
+    m_Bits: 8
+  ceilingCheckDistance: 0.1
+  gravityScale: 3
+  fallGravityMultiplier: 1.5
 --- !u!1 &1592812381
 GameObject:
   m_ObjectHideFlags: 0
@@ -949,7 +974,7 @@ GameObject:
   serializedVersion: 6
   m_Component:
   - component: {fileID: 1592812382}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Ground
   m_TagString: Untagged
   m_Icon: {fileID: 0}
@@ -983,7 +1008,7 @@ GameObject:
   - component: {fileID: 1651898468}
   - component: {fileID: 1651898470}
   - component: {fileID: 1651898469}
-  m_Layer: 0
+  m_Layer: 3
   m_Name: Square
   m_TagString: Untagged
   m_Icon: {fileID: 0}
