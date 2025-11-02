@@ -12,21 +12,25 @@ public class ParallelWorldManager : MonoBehaviour
 
     [Header("Transition Settings")]
     public float transitionDelay = 1.5f;
-    public AudioClip transitionSound;
+    public float cooldownTime = 0.5f; // NEW: Cooldown after transition
+
+    [Header("Audio Settings")]
+    public AudioClip toParallelSound;
+    public AudioClip toNormalSound;
+    public float audioFadeTime = 0.5f;
 
     [Header("Light Settings")]
     public Light worldLight;
     public float normalLightIntensity = 1f;
     public float parallelLightIntensity = 0.3f;
 
-    [Header("Screen Effect")]
-    public CanvasGroup fadeOverlay;
-
     [Header("Debug")]
     public bool isParallelWorldActive = false;
     public bool isTransitioning = false;
+    public bool isOnCooldown = false; // NEW: Cooldown state
 
     private AudioSource audioSource;
+    private AudioSource backgroundAudioSource;
 
     void Start()
     {
@@ -34,15 +38,20 @@ public class ParallelWorldManager : MonoBehaviour
         parallelWorld.SetActive(false);
         isParallelWorldActive = false;
 
+        // Setup audio sources
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
+
+        // Create separate audio source for background music (if needed)
+        backgroundAudioSource = gameObject.AddComponent<AudioSource>();
+        backgroundAudioSource.loop = true;
     }
 
     void Update()
     {
-        // PRESS F to toggle between worlds
-        if (Input.GetKeyDown(toggleKey) && !isTransitioning)
+        // PRESS F to toggle between worlds (only if not transitioning AND not on cooldown)
+        if (Input.GetKeyDown(toggleKey) && !isTransitioning && !isOnCooldown)
         {
             ToggleWorlds();
         }
@@ -50,7 +59,7 @@ public class ParallelWorldManager : MonoBehaviour
 
     void ToggleWorlds()
     {
-        if (!isTransitioning)
+        if (!isTransitioning && !isOnCooldown)
         {
             StartCoroutine(TransitionEffects());
         }
@@ -60,13 +69,15 @@ public class ParallelWorldManager : MonoBehaviour
     {
         isTransitioning = true;
 
-        // 1. Play transition sound
+        // 1. Play appropriate transition sound
+        AudioClip transitionSound = isParallelWorldActive ? toNormalSound : toParallelSound;
         if (transitionSound != null)
+        {
             audioSource.PlayOneShot(transitionSound);
+        }
 
-        // 2. Start fade out
-        if (fadeOverlay != null)
-            yield return StartCoroutine(FadeScreen(0f, 1f, transitionDelay / 2));
+        // 2. Fade out current background audio (if any)
+        yield return StartCoroutine(FadeAudio(backgroundAudioSource, backgroundAudioSource.volume, 0f, audioFadeTime / 2));
 
         // 3. Dim lights during transition
         if (worldLight != null)
@@ -75,10 +86,10 @@ public class ParallelWorldManager : MonoBehaviour
             StartCoroutine(DimLights(worldLight.intensity, targetIntensity, transitionDelay));
         }
 
-        // 4. Wait a bit in the middle
-        yield return new WaitForSeconds(transitionDelay / 4);
+        // 4. Wait a bit before switching worlds
+        yield return new WaitForSeconds(transitionDelay / 3);
 
-        // 5. Switch worlds (happens in middle of transition)
+        // 5. Switch worlds
         if (isParallelWorldActive)
         {
             ExitParallelWorld();
@@ -88,26 +99,39 @@ public class ParallelWorldManager : MonoBehaviour
             EnterParallelWorld();
         }
 
-        // 6. Wait a bit more
-        yield return new WaitForSeconds(transitionDelay / 4);
+        // 6. Wait a bit after switching
+        yield return new WaitForSeconds(transitionDelay / 3);
 
-        // 7. Fade back in
-        if (fadeOverlay != null)
-            yield return StartCoroutine(FadeScreen(1f, 0f, transitionDelay / 2));
+        // 7. Fade in new background audio (if any)
+        yield return StartCoroutine(FadeAudio(backgroundAudioSource, 0f, 1f, audioFadeTime / 2));
 
+        // 8. Start cooldown period
         isTransitioning = false;
+        StartCoroutine(StartCooldown());
     }
 
-    IEnumerator FadeScreen(float from, float to, float duration)
+    // NEW: Cooldown coroutine
+    IEnumerator StartCooldown()
     {
+        isOnCooldown = true;
+        yield return new WaitForSeconds(cooldownTime);
+        isOnCooldown = false;
+    }
+
+    IEnumerator FadeAudio(AudioSource audioSrc, float from, float to, float duration)
+    {
+        if (audioSrc == null || !audioSrc.isPlaying) yield break;
+
         float elapsed = 0f;
         while (elapsed < duration)
         {
-            fadeOverlay.alpha = Mathf.Lerp(from, to, elapsed / duration);
+            if (audioSrc != null)
+                audioSrc.volume = Mathf.Lerp(from, to, elapsed / duration);
             elapsed += Time.deltaTime;
             yield return null;
         }
-        fadeOverlay.alpha = to;
+        if (audioSrc != null)
+            audioSrc.volume = to;
     }
 
     IEnumerator DimLights(float from, float to, float duration)
@@ -129,6 +153,9 @@ public class ParallelWorldManager : MonoBehaviour
         normalWorld.SetActive(false);
         parallelWorld.SetActive(true);
         isParallelWorldActive = true;
+
+        // You can play parallel world background music here
+        // PlayBackgroundAudio(parallelWorldMusic);
     }
 
     void ExitParallelWorld()
@@ -136,5 +163,35 @@ public class ParallelWorldManager : MonoBehaviour
         parallelWorld.SetActive(false);
         normalWorld.SetActive(true);
         isParallelWorldActive = false;
+
+        // You can play normal world background music here
+        // PlayBackgroundAudio(normalWorldMusic);
+    }
+
+    // Optional: Method to handle background music
+    public void PlayBackgroundAudio(AudioClip musicClip)
+    {
+        if (musicClip != null && backgroundAudioSource != null)
+        {
+            backgroundAudioSource.clip = musicClip;
+            backgroundAudioSource.volume = 0f;
+            backgroundAudioSource.Play();
+            StartCoroutine(FadeAudio(backgroundAudioSource, 0f, 1f, audioFadeTime));
+        }
+    }
+
+    // Optional: Method to stop background music
+    public void StopBackgroundAudio()
+    {
+        if (backgroundAudioSource != null && backgroundAudioSource.isPlaying)
+        {
+            StartCoroutine(FadeAudio(backgroundAudioSource, backgroundAudioSource.volume, 0f, audioFadeTime));
+        }
+    }
+
+    // NEW: Public method to check if world switching is available
+    public bool CanSwitchWorlds()
+    {
+        return !isTransitioning && !isOnCooldown;
     }
 }
