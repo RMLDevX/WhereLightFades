@@ -1,4 +1,3 @@
-// ===== STEP 2: PlayerCombat.cs (Attach to your Player GameObject) =====
 using UnityEngine;
 
 public class PlayerCombat : MonoBehaviour

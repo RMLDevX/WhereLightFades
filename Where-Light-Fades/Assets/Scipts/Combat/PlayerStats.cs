@@ -1,6 +1,5 @@
 using UnityEngine;
 
-
 public class PlayerStats : MonoBehaviour
 {
     public static PlayerStats Instance; // Singleton pattern
@@ -17,6 +16,10 @@ public class PlayerStats : MonoBehaviour
     public float slashManaCost = 0f;
     public float magicManaCost = 15f;
 
+    [Header("Life Drain Settings")]
+    public float healthDrainRate = 1f; // HP lost per second
+    public bool enableLifeDrain = true;
+
     void Awake()
     {
         // Make this persistent across scenes
@@ -28,6 +31,20 @@ public class PlayerStats : MonoBehaviour
         else
         {
             Destroy(gameObject);
+        }
+    }
+
+    void Update()
+    {
+        // Continuous health drain
+        if (enableLifeDrain && currentHealth > 0)
+        {
+            currentHealth -= healthDrainRate * Time.deltaTime;
+            if (currentHealth <= 0)
+            {
+                currentHealth = 0;
+                Die();
+            }
         }
     }
 

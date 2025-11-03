@@ -1,4 +1,3 @@
-// ===== STEP 3: MagicProjectile.cs (Attach to your projectile prefab) =====
 using UnityEngine;
 
 public class MagicProjectile : MonoBehaviour
