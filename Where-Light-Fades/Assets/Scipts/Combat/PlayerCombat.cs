@@ -1,3 +1,4 @@
+// ===== STEP 2: PlayerCombat.cs (Attach to your Player GameObject) =====
 using UnityEngine;
 
 public class PlayerCombat : MonoBehaviour
@@ -11,6 +12,13 @@ public class PlayerCombat : MonoBehaviour
     public GameObject magicProjectilePrefab;
     public Transform magicSpawnPoint;
     public float projectileSpeed = 10f;
+
+    private TutorialPlayerMovement playerMovement;
+
+    void Start()
+    {
+        playerMovement = GetComponent<TutorialPlayerMovement>();
+    }
 
     void Update()
     {
@@ -60,8 +68,8 @@ public class PlayerCombat : MonoBehaviour
         // Spawn projectile
         GameObject projectile = Instantiate(magicProjectilePrefab, magicSpawnPoint.position, Quaternion.identity);
 
-        // Get direction player is facing
-        float direction = transform.localScale.x > 0 ? 1f : -1f;
+        // Get direction based on sprite flip
+        float direction = playerMovement.IsFacingRight() ? 1f : -1f;
 
         Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
         rb.velocity = new Vector2(direction * projectileSpeed, 0f);

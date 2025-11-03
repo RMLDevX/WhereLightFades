@@ -70,9 +70,34 @@ public class TutorialPlayerMovement : MonoBehaviour
     void HandleSpriteFlip()
     {
         if (horizontalInput > 0.1f)
+        {
             spriteRenderer.flipX = false;
+            FlipAttackPoints(false);
+        }
         else if (horizontalInput < -0.1f)
+        {
             spriteRenderer.flipX = true;
+            FlipAttackPoints(true);
+        }
+    }
+
+    void FlipAttackPoints(bool facingLeft)
+    {
+        Transform attackPoint = transform.Find("AttackPoint");
+        if (attackPoint != null)
+        {
+            Vector3 pos = attackPoint.localPosition;
+            pos.x = Mathf.Abs(pos.x) * (facingLeft ? -1 : 1);
+            attackPoint.localPosition = pos;
+        }
+
+        Transform magicSpawnPoint = transform.Find("MagicSpawnPoint");
+        if (magicSpawnPoint != null)
+        {
+            Vector3 pos = magicSpawnPoint.localPosition;
+            pos.x = Mathf.Abs(pos.x) * (facingLeft ? -1 : 1);
+            magicSpawnPoint.localPosition = pos;
+        }
     }
 
     void FixedUpdate()
