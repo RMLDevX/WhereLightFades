@@ -87,4 +87,6 @@ public class PlayerMovement : MonoBehaviour
         enabled = state;
         if (!state) rb.velocity = new Vector2(0, rb.velocity.y);
     }
+
+
 }
