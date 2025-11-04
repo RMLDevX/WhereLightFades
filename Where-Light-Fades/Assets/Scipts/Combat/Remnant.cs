@@ -11,7 +11,7 @@ public class Remnant : MonoBehaviour
 
     [Header("Drop Effect")]
     public float throwForceX = 2f;
-    public float throwForceY = 5f;
+    public float throwForceY = 4f;
     public float dropDelay = 0.5f; // Time before it can be collected
 
     private Transform player;

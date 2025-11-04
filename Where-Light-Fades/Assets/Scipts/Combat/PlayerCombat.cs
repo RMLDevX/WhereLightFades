@@ -7,30 +7,12 @@ public class PlayerCombat : MonoBehaviour
     public float attackRange = 1.5f;
     public LayerMask enemyLayer;
 
-    [Header("Magic Settings")]
-    public GameObject magicProjectilePrefab;
-    public Transform magicSpawnPoint;
-    public float projectileSpeed = 10f;
-
-    private TutorialPlayerMovement playerMovement;
-
-    void Start()
-    {
-        playerMovement = GetComponent<TutorialPlayerMovement>();
-    }
-
     void Update()
     {
         // E key for slash attack
         if (Input.GetKeyDown(KeyCode.E))
         {
             SlashAttack();
-        }
-
-        // R key for magic attack
-        if (Input.GetKeyDown(KeyCode.R))
-        {
-            MagicAttack();
         }
     }
 
@@ -53,27 +35,6 @@ public class PlayerCombat : MonoBehaviour
         }
 
         Debug.Log("Slash Attack!");
-    }
-
-    void MagicAttack()
-    {
-        // Check if we have enough mana
-        if (!PlayerStats.Instance.UseMana(PlayerStats.Instance.magicManaCost))
-        {
-            Debug.Log("Not enough mana!");
-            return;
-        }
-
-        // Spawn projectile
-        GameObject projectile = Instantiate(magicProjectilePrefab, magicSpawnPoint.position, Quaternion.identity);
-
-        // Get direction based on sprite flip
-        float direction = playerMovement.IsFacingRight() ? 1f : -1f;
-
-        Rigidbody2D rb = projectile.GetComponent<Rigidbody2D>();
-        rb.velocity = new Vector2(direction * projectileSpeed, 0f);
-
-        Debug.Log("Magic Attack!");
     }
 
     // Visualize attack range in editor

@@ -12,9 +12,7 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Combat Settings")]
     public float slashDamage = 20f;
-    public float magicDamage = 30f;
     public float slashManaCost = 0f;
-    public float magicManaCost = 15f;
 
     [Header("Life Drain Settings")]
     public float healthDrainRate = 1f; // HP lost per second
