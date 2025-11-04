@@ -23,6 +23,9 @@ public class TutorialPlayerMovement : MonoBehaviour
     private Vector2 targetVelocity;
     private float leftBoundary;
 
+    // Public property to check if player is moving/running
+    public bool IsMoving { get; private set; }
+
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
@@ -61,10 +64,12 @@ public class TutorialPlayerMovement : MonoBehaviour
     void GetInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
+        IsMoving = Mathf.Abs(horizontalInput) > 0.1f;
 
         if (transform.position.x <= leftBoundary && horizontalInput < 0)
         {
             horizontalInput = 0;
+            IsMoving = false;
         }
     }
 
@@ -87,14 +92,16 @@ public class TutorialPlayerMovement : MonoBehaviour
         if (animator == null) return;
         if (playerJump == null) return;
 
+        // Check if currently slashing
+        bool isSlashing = animator.GetBool("isSlashing");
+
         // Only show running when moving AND grounded AND not jumping
-        bool isMoving = Mathf.Abs(horizontalInput) > 0.1f;
         bool isGrounded = playerJump.IsGrounded();
-        bool isJumping = !isGrounded; // Or use playerJump.IsJumping() if you prefer
+        bool isJumping = !isGrounded;
 
-        bool isRunning = isMoving && isGrounded && !isJumping;
+        bool isRunning = IsMoving && isGrounded && !isJumping;
 
-        animator.SetBool("isRunning", isRunning);
+        animator.SetBool("isRunning", isRunning && !isSlashing);
     }
 
     void FlipAttackPoints(bool facingLeft)

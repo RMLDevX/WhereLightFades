@@ -14,14 +14,19 @@ public class PlayerMovement : MonoBehaviour
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private PlayerJump playerJump;
+    private Animator animator;
     private float horizontalInput;
     private Vector2 targetVelocity;
+
+    // Public property to check if player is moving/running
+    public bool IsMoving { get; private set; }
 
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         playerJump = GetComponent<PlayerJump>();
+        animator = GetComponent<Animator>();
         SetupRigidbody();
     }
 
@@ -36,11 +41,13 @@ public class PlayerMovement : MonoBehaviour
     {
         GetInput();
         HandleSpriteFlip();
+        HandleAnimations(); // Added from Code1
     }
 
     void GetInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
+        IsMoving = Mathf.Abs(horizontalInput) > 0.1f; // Added from Code1
     }
 
     void HandleSpriteFlip()
@@ -55,6 +62,24 @@ public class PlayerMovement : MonoBehaviour
             spriteRenderer.flipX = true;
             FlipAttackPoints(true);
         }
+    }
+
+    // Added from Code1 - Animation Handling
+    void HandleAnimations()
+    {
+        if (animator == null) return;
+        if (playerJump == null) return;
+
+        // Check if currently slashing
+        bool isSlashing = animator.GetBool("isSlashing");
+
+        // Only show running when moving AND grounded AND not jumping
+        bool isGrounded = playerJump.IsGrounded();
+        bool isJumping = !isGrounded;
+
+        bool isRunning = IsMoving && isGrounded && !isJumping;
+
+        animator.SetBool("isRunning", isRunning && !isSlashing);
     }
 
     void FlipAttackPoints(bool facingLeft)
