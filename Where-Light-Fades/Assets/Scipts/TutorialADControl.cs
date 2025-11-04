@@ -8,16 +8,17 @@ public class TutorialPlayerMovement : MonoBehaviour
     public float deceleration = 30f;
 
     [Header("Jump Movement Settings")]
-    public float airMoveSpeedMultiplier = 0.7f; // 70% speed in air
-    public float airAccelerationMultiplier = 0.6f; // 60% acceleration in air
+    public float airMoveSpeedMultiplier = 0.7f;
+    public float airAccelerationMultiplier = 0.6f;
 
     [Header("Camera Boundaries")]
-    public float leftBoundaryOffset = 0.5f; // How far from left edge player can go
+    public float leftBoundaryOffset = 0.5f;
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;
     private PlayerJump playerJump;
     private Camera mainCamera;
+    private Animator animator;
     private float horizontalInput;
     private Vector2 targetVelocity;
     private float leftBoundary;
@@ -27,6 +28,7 @@ public class TutorialPlayerMovement : MonoBehaviour
         rb = GetComponent<Rigidbody2D>();
         spriteRenderer = GetComponentInChildren<SpriteRenderer>();
         playerJump = GetComponent<PlayerJump>();
+        animator = GetComponent<Animator>();
         mainCamera = Camera.main;
         SetupRigidbody();
         CalculateBoundaries();
@@ -43,7 +45,6 @@ public class TutorialPlayerMovement : MonoBehaviour
     {
         if (mainCamera != null)
         {
-            // Calculate left boundary based on camera view
             float cameraLeft = mainCamera.ScreenToWorldPoint(new Vector3(0, 0, 0)).x;
             leftBoundary = cameraLeft + leftBoundaryOffset;
         }
@@ -53,14 +54,14 @@ public class TutorialPlayerMovement : MonoBehaviour
     {
         GetInput();
         HandleSpriteFlip();
-        CalculateBoundaries(); // Update boundaries in case camera moves
+        HandleAnimations();
+        CalculateBoundaries();
     }
 
     void GetInput()
     {
         horizontalInput = Input.GetAxis("Horizontal");
 
-        // Prevent moving left if at boundary
         if (transform.position.x <= leftBoundary && horizontalInput < 0)
         {
             horizontalInput = 0;
@@ -81,6 +82,21 @@ public class TutorialPlayerMovement : MonoBehaviour
         }
     }
 
+    void HandleAnimations()
+    {
+        if (animator == null) return;
+        if (playerJump == null) return;
+
+        // Only show running when moving AND grounded AND not jumping
+        bool isMoving = Mathf.Abs(horizontalInput) > 0.1f;
+        bool isGrounded = playerJump.IsGrounded();
+        bool isJumping = !isGrounded; // Or use playerJump.IsJumping() if you prefer
+
+        bool isRunning = isMoving && isGrounded && !isJumping;
+
+        animator.SetBool("isRunning", isRunning);
+    }
+
     void FlipAttackPoints(bool facingLeft)
     {
         Transform attackPoint = transform.Find("AttackPoint");
@@ -89,14 +105,6 @@ public class TutorialPlayerMovement : MonoBehaviour
             Vector3 pos = attackPoint.localPosition;
             pos.x = Mathf.Abs(pos.x) * (facingLeft ? -1 : 1);
             attackPoint.localPosition = pos;
-        }
-
-        Transform magicSpawnPoint = transform.Find("MagicSpawnPoint");
-        if (magicSpawnPoint != null)
-        {
-            Vector3 pos = magicSpawnPoint.localPosition;
-            pos.x = Mathf.Abs(pos.x) * (facingLeft ? -1 : 1);
-            magicSpawnPoint.localPosition = pos;
         }
     }
 
@@ -111,7 +119,6 @@ public class TutorialPlayerMovement : MonoBehaviour
         float currentMoveSpeed = moveSpeed;
         float currentAcceleration = acceleration;
 
-        // Apply air movement modifiers when not grounded
         if (playerJump != null && !playerJump.IsGrounded())
         {
             currentMoveSpeed *= airMoveSpeedMultiplier;
@@ -134,14 +141,12 @@ public class TutorialPlayerMovement : MonoBehaviour
 
     void EnforceBoundaries()
     {
-        // Prevent player from going beyond left boundary
         if (transform.position.x < leftBoundary)
         {
             Vector3 newPosition = transform.position;
             newPosition.x = leftBoundary;
             transform.position = newPosition;
 
-            // Stop leftward velocity
             if (rb.velocity.x < 0)
             {
                 rb.velocity = new Vector2(0, rb.velocity.y);
@@ -160,7 +165,6 @@ public class TutorialPlayerMovement : MonoBehaviour
         return !spriteRenderer.flipX;
     }
 
-    // Visualize boundary in Scene view
     void OnDrawGizmosSelected()
     {
         if (Application.isPlaying && mainCamera != null)

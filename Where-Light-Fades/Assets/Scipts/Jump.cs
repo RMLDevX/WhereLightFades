@@ -1,4 +1,3 @@
-
 using UnityEngine;
 
 public class PlayerJump : MonoBehaviour
@@ -11,7 +10,7 @@ public class PlayerJump : MonoBehaviour
 
     [Header("Ground Detection")]
     public float groundCheckDistance = 0.2f;
-    public float maxGroundAngle = 45f; // Maximum angle considered as ground
+    public float maxGroundAngle = 45f;
     public LayerMask groundLayer;
 
     [Header("Ceiling Detection")]
@@ -22,6 +21,7 @@ public class PlayerJump : MonoBehaviour
     public float fallGravityMultiplier = 1.5f;
 
     private Rigidbody2D rb;
+    private Animator animator;
     private bool isGrounded;
     private bool isTouchingCeiling;
 
@@ -34,6 +34,7 @@ public class PlayerJump : MonoBehaviour
     void Start()
     {
         rb = GetComponent<Rigidbody2D>();
+        animator = GetComponent<Animator>();
         SetupRigidbody();
     }
 
@@ -48,10 +49,12 @@ public class PlayerJump : MonoBehaviour
     {
         HandleJump();
         UpdateJumpTimers();
+        UpdateJumpAnimation();
     }
 
     void HandleJump()
     {
+        bool wasGrounded = isGrounded;
         isGrounded = CheckGrounded();
         isTouchingCeiling = CheckCeiling();
 
@@ -119,6 +122,19 @@ public class PlayerJump : MonoBehaviour
         }
     }
 
+    void UpdateJumpAnimation()
+    {
+        if (animator != null)
+        {
+            // Set jumping animation when in air and not grounded
+            bool shouldShowJump = !isGrounded && (isJumping || rb.velocity.y > 0.1f);
+            animator.SetBool("isJumping", shouldShowJump);
+
+            // Optional: Add falling animation when descending
+            // animator.SetBool("isFalling", !isGrounded && rb.velocity.y < -0.1f);
+        }
+    }
+
     bool CheckGrounded()
     {
         BoxCollider2D spriteCollider = GetComponentInChildren<BoxCollider2D>();
@@ -133,18 +149,12 @@ public class PlayerJump : MonoBehaviour
         Vector2 checkSize = new Vector2(spriteCollider.bounds.size.x * 0.8f, groundCheckDistance);
         checkPosition.y = spriteCollider.bounds.min.y - (checkSize.y * 0.5f);
 
-        // Debug visualization
-        Debug.DrawLine(checkPosition - new Vector2(checkSize.x * 0.5f, checkSize.y * 0.5f),
-                      checkPosition + new Vector2(checkSize.x * 0.5f, checkSize.y * 0.5f),
-                      Color.blue, 0.1f);
-
         Collider2D[] groundHits = Physics2D.OverlapBoxAll(checkPosition, checkSize, 0f, groundLayer);
 
         foreach (Collider2D hit in groundHits)
         {
             if (hit != null && IsTopSurface(hit, spriteCollider.bounds.center.y))
             {
-                Debug.Log("Valid top surface found: " + hit.gameObject.name);
                 return true;
             }
         }
@@ -166,18 +176,12 @@ public class PlayerJump : MonoBehaviour
         Vector2 checkSize = new Vector2(spriteCollider.bounds.size.x * 0.8f, ceilingCheckDistance);
         checkPosition.y = spriteCollider.bounds.max.y + (checkSize.y * 0.5f);
 
-        // Debug visualization for ceiling check
-        Debug.DrawLine(checkPosition - new Vector2(checkSize.x * 0.5f, checkSize.y * 0.5f),
-                      checkPosition + new Vector2(checkSize.x * 0.5f, checkSize.y * 0.5f),
-                      Color.red, 0.1f);
-
         Collider2D[] ceilingHits = Physics2D.OverlapBoxAll(checkPosition, checkSize, 0f, groundLayer);
 
         foreach (Collider2D hit in ceilingHits)
         {
             if (hit != null && IsBottomSurface(hit, spriteCollider.bounds.center.y))
             {
-                Debug.Log("Ceiling hit detected: " + hit.gameObject.name);
                 return true;
             }
         }
@@ -187,30 +191,16 @@ public class PlayerJump : MonoBehaviour
 
     bool IsTopSurface(Collider2D hit, float playerBottomY)
     {
-        // Check if the platform is BELOW the player (top surface)
         float platformTop = hit.bounds.max.y;
         float playerBottom = playerBottomY - GetComponentInChildren<BoxCollider2D>().bounds.extents.y;
-
-        // Only consider it ground if platform top is slightly below player bottom
-        bool isTopSurface = platformTop <= playerBottom + groundCheckDistance;
-
-        Debug.Log($"Platform Top: {platformTop}, Player Bottom: {playerBottom}, IsTop: {isTopSurface}");
-
-        return isTopSurface;
+        return platformTop <= playerBottom + groundCheckDistance;
     }
 
     bool IsBottomSurface(Collider2D hit, float playerTopY)
     {
-        // Check if the platform is ABOVE the player (bottom surface/ceiling)
         float platformBottom = hit.bounds.min.y;
         float playerTop = playerTopY + GetComponentInChildren<BoxCollider2D>().bounds.extents.y;
-
-        // Only consider it ceiling if platform bottom is slightly above player top
-        bool isBottomSurface = platformBottom >= playerTop - ceilingCheckDistance;
-
-        Debug.Log($"Platform Bottom: {platformBottom}, Player Top: {playerTop}, IsCeiling: {isBottomSurface}");
-
-        return isBottomSurface;
+        return platformBottom >= playerTop - ceilingCheckDistance;
     }
 
     void PerformJump()
@@ -227,7 +217,6 @@ public class PlayerJump : MonoBehaviour
         isJumping = false;
         jumpTimeCounter = 0f;
 
-        // Stop upward momentum when hitting ceiling
         if (rb.velocity.y > 0f)
         {
             rb.velocity = new Vector2(rb.velocity.x, 0f);
@@ -267,9 +256,6 @@ public class PlayerJump : MonoBehaviour
 
     void OnDrawGizmosSelected()
     {
-        // Your existing gizmo code for ground check
-
-        // Add ceiling check visualization
         BoxCollider2D spriteCollider = GetComponentInChildren<BoxCollider2D>();
         if (spriteCollider != null)
         {

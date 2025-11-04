@@ -22,6 +22,7 @@ public class DialogueManager : MonoBehaviour
     private int currentLine;
     private TutorialPlayerMovement playerMovement;
     private PlayerJump playerJump;
+    private Animator playerAnimator;
     private string currentNPCName;
 
     void Awake()
@@ -41,9 +42,29 @@ public class DialogueManager : MonoBehaviour
 
         playerMovement = FindObjectOfType<TutorialPlayerMovement>();
         playerJump = FindObjectOfType<PlayerJump>();
+        playerAnimator = FindObjectOfType<Animator>();
 
-        if (playerMovement != null) playerMovement.SetMovement(false);
+        // Disable player movement and combat
+        if (playerMovement != null)
+        {
+            playerMovement.SetMovement(false);
+            // Force player to idle by setting velocity to zero
+            Rigidbody2D rb = playerMovement.GetComponent<Rigidbody2D>();
+            if (rb != null)
+            {
+                rb.velocity = new Vector2(0, rb.velocity.y);
+            }
+        }
+
         if (playerJump != null) playerJump.enabled = false;
+
+        // Reset player animation to idle
+        if (playerAnimator != null)
+        {
+            playerAnimator.SetBool("isRunning", false);
+            // If you have other animation parameters, reset them here too
+            // Example: playerAnimator.SetBool("isJumping", false);
+        }
 
         ShowNextLine();
     }
@@ -131,6 +152,8 @@ public class DialogueManager : MonoBehaviour
         dialoguePanel.SetActive(false);
         if (playerMovement != null) playerMovement.SetMovement(true);
         if (playerJump != null) playerJump.enabled = true;
+
+        // Animation will automatically update when movement is re-enabled
     }
 
     void Update()
