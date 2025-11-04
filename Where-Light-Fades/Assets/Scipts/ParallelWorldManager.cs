@@ -30,6 +30,7 @@ public class ParallelWorldManager : MonoBehaviour
     public bool isParallelWorldActive = false;
     public bool isTransitioning = false;
     public bool isOnCooldown = false;
+    public bool canSwitchToParallel = true; // Control whether player can switch to parallel world
 
     private AudioSource audioSource;
     private AudioSource backgroundAudioSource;
@@ -40,11 +41,9 @@ public class ParallelWorldManager : MonoBehaviour
         parallelWorld.SetActive(false);
         isParallelWorldActive = false;
 
-
         audioSource = GetComponent<AudioSource>();
         if (audioSource == null)
             audioSource = gameObject.AddComponent<AudioSource>();
-
 
         backgroundAudioSource = gameObject.AddComponent<AudioSource>();
         backgroundAudioSource.loop = true;
@@ -58,8 +57,8 @@ public class ParallelWorldManager : MonoBehaviour
 
     void Update()
     {
-        // PRESS F to toggle between worlds (only if not transitioning AND not on cooldown AND no dialogue active)
-        if (Input.GetKeyDown(toggleKey) && !isTransitioning && !isOnCooldown && !IsDialogueActive())
+        // PRESS F to toggle between worlds (only if not transitioning AND not on cooldown AND no dialogue active AND has mana)
+        if (Input.GetKeyDown(toggleKey) && !isTransitioning && !isOnCooldown && !IsDialogueActive() && CanSwitchWorlds())
         {
             ToggleWorlds();
         }
@@ -67,7 +66,7 @@ public class ParallelWorldManager : MonoBehaviour
 
     void ToggleWorlds()
     {
-        if (!isTransitioning && !isOnCooldown && !IsDialogueActive())
+        if (!isTransitioning && !isOnCooldown && !IsDialogueActive() && CanSwitchWorlds())
         {
             StartCoroutine(TransitionEffects());
         }
@@ -77,6 +76,26 @@ public class ParallelWorldManager : MonoBehaviour
     bool IsDialogueActive()
     {
         return DialogueManager.Instance != null && DialogueManager.Instance.dialoguePanel.activeInHierarchy;
+    }
+
+    // Enhanced method to check if world switching is available
+    public bool CanSwitchWorlds()
+    {
+        // Can always switch back to normal world
+        if (isParallelWorldActive)
+            return true;
+
+        // Can only switch to parallel world if we have mana and switching is allowed
+        if (!isParallelWorldActive)
+            return canSwitchToParallel && HasEnoughMana();
+
+        return !isTransitioning && !isOnCooldown && !IsDialogueActive();
+    }
+
+    // Check if player has enough mana to enter parallel world
+    bool HasEnoughMana()
+    {
+        return PlayerStats.Instance != null && PlayerStats.Instance.currentMana > 0;
     }
 
     IEnumerator TransitionEffects()
@@ -177,6 +196,12 @@ public class ParallelWorldManager : MonoBehaviour
         normalWorld.SetActive(false);
         parallelWorld.SetActive(true);
         isParallelWorldActive = true;
+
+        // Activate player stats and set parallel world state
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.SetParallelWorldState(true);
+        }
     }
 
     void ExitParallelWorld()
@@ -184,6 +209,75 @@ public class ParallelWorldManager : MonoBehaviour
         parallelWorld.SetActive(false);
         normalWorld.SetActive(true);
         isParallelWorldActive = false;
+
+        // Deactivate parallel world effects
+        if (PlayerStats.Instance != null)
+        {
+            PlayerStats.Instance.SetParallelWorldState(false);
+        }
+    }
+
+    // Public method to force switch to normal world (for mana depletion)
+    public void ForceSwitchToNormalWorld()
+    {
+        if (isParallelWorldActive && !isTransitioning)
+        {
+            StartCoroutine(ForceSwitchCoroutine());
+        }
+    }
+
+    IEnumerator ForceSwitchCoroutine()
+    {
+        isTransitioning = true;
+
+        // Play transition sound
+        if (toNormalSound != null)
+        {
+            audioSource.PlayOneShot(toNormalSound);
+        }
+
+        // Fade out audio
+        yield return StartCoroutine(FadeAudio(backgroundAudioSource, backgroundAudioSource.volume, 0f, audioFadeTime / 2));
+
+        if (backgroundAudioSource.isPlaying)
+        {
+            backgroundAudioSource.Stop();
+        }
+
+        // Dim lights
+        if (worldLight != null)
+        {
+            StartCoroutine(DimLights(worldLight.intensity, normalLightIntensity, transitionDelay));
+        }
+
+        yield return new WaitForSeconds(transitionDelay / 3);
+
+        // Switch to normal world
+        ExitParallelWorld();
+
+        yield return new WaitForSeconds(transitionDelay / 3);
+
+        // Start normal world music
+        if (normalWorldMusic != null)
+        {
+            PlayBackgroundAudio(normalWorldMusic);
+        }
+
+        isTransitioning = false;
+
+        // Prevent switching back to parallel world until mana is restored
+        canSwitchToParallel = false;
+        Debug.Log("Cannot switch to parallel world - mana depleted!");
+    }
+
+    // Method to re-enable parallel world switching (call this when mana is restored)
+    public void EnableParallelWorldSwitching()
+    {
+        if (PlayerStats.Instance != null && PlayerStats.Instance.currentMana > 0)
+        {
+            canSwitchToParallel = true;
+            Debug.Log("Parallel world switching re-enabled");
+        }
     }
 
     // Method to handle background music
@@ -225,11 +319,5 @@ public class ParallelWorldManager : MonoBehaviour
         {
             audioSrc.Stop();
         }
-    }
-
-    // Public method to check if world switching is available
-    public bool CanSwitchWorlds()
-    {
-        return !isTransitioning && !isOnCooldown && !IsDialogueActive();
     }
 }

@@ -17,7 +17,14 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Life Drain Settings")]
     public float healthDrainRate = 1f; // HP lost per second
-    public bool enableLifeDrain = true;
+    public bool enableLifeDrain = false; // Start disabled
+
+    [Header("World Effects")]
+    public bool isInParallelWorld = false;
+    public float parallelWorldHealthDrainMultiplier = 3f;
+    public float parallelWorldManaDrainMultiplier = 2f;
+
+    private float previousMana;
 
     void Awake()
     {
@@ -38,6 +45,11 @@ public class PlayerStats : MonoBehaviour
             Debug.Log("Destroying duplicate PlayerStats");
             Destroy(gameObject);
         }
+    }
+
+    void Start()
+    {
+        previousMana = currentMana;
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
@@ -96,16 +108,84 @@ public class PlayerStats : MonoBehaviour
 
     void Update()
     {
-        // Continuous health drain
+        // Check if mana was restored
+        CheckManaRestored();
+
+        // Only drain life if system is activated
         if (enableLifeDrain && currentHealth > 0)
         {
-            currentHealth -= healthDrainRate * Time.deltaTime;
+            float drainRate = healthDrainRate * Time.deltaTime;
+
+            // Apply multiplier if in parallel world
+            if (isInParallelWorld)
+            {
+                drainRate *= parallelWorldHealthDrainMultiplier;
+            }
+
+            currentHealth -= drainRate;
+
             if (currentHealth <= 0)
             {
                 currentHealth = 0;
                 Die();
             }
         }
+
+        // Only drain mana if in parallel world AND system is activated
+        if (isInParallelWorld && enableLifeDrain && currentMana > 0)
+        {
+            float manaDrain = parallelWorldManaDrainMultiplier * Time.deltaTime;
+            currentMana = Mathf.Max(0, currentMana - manaDrain);
+
+            // Auto-switch to normal world when mana reaches 0
+            if (currentMana <= 0)
+            {
+                currentMana = 0;
+                SwitchToNormalWorld();
+            }
+        }
+
+        // Update previous mana for next frame
+        previousMana = currentMana;
+    }
+
+    void CheckManaRestored()
+    {
+        // If mana increased from 0 to positive, re-enable parallel world switching
+        if (previousMana <= 0 && currentMana > 0)
+        {
+            EnableParallelWorldSwitching();
+        }
+    }
+
+    void SwitchToNormalWorld()
+    {
+        if (isInParallelWorld)
+        {
+            Debug.Log("Mana depleted! Auto-switching to normal world");
+
+            // Find ParallelWorldManager and force switch to normal world
+            ParallelWorldManager worldManager = FindObjectOfType<ParallelWorldManager>();
+            if (worldManager != null && worldManager.isParallelWorldActive)
+            {
+                worldManager.ForceSwitchToNormalWorld();
+            }
+        }
+    }
+
+    void EnableParallelWorldSwitching()
+    {
+        ParallelWorldManager worldManager = FindObjectOfType<ParallelWorldManager>();
+        if (worldManager != null)
+        {
+            worldManager.EnableParallelWorldSwitching();
+        }
+    }
+
+    public void SetParallelWorldState(bool inParallelWorld)
+    {
+        isInParallelWorld = inParallelWorld;
+        Debug.Log("Parallel world state: " + inParallelWorld);
     }
 
     public bool UseMana(float amount)
@@ -135,7 +215,14 @@ public class PlayerStats : MonoBehaviour
 
     public void RestoreMana(float amount)
     {
+        float oldMana = currentMana;
         currentMana = Mathf.Min(currentMana + amount, maxMana);
+
+        // Manually check for mana restoration when using this method
+        if (oldMana <= 0 && currentMana > 0)
+        {
+            EnableParallelWorldSwitching();
+        }
     }
 
     void Die()
