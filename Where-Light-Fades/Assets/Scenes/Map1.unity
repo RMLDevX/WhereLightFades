@@ -3950,67 +3950,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &1619295628
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1619295630}
-  - component: {fileID: 1619295629}
-  m_Layer: 0
-  m_Name: ParallelWorldManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1619295629
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1619295628}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: e8cdc52bd41fcba4c8ecc9f7a9ffcb95, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  normalWorld: {fileID: 0}
-  parallelWorld: {fileID: 0}
-  toggleKey: 102
-  transitionDelay: 2
-  cooldownTime: 0.5
-  toParallelSound: {fileID: 8300000, guid: e1118a50314ade649ad08d8de503c1b4, type: 3}
-  toNormalSound: {fileID: 8300000, guid: d2375a43bb60e024c8fc406a63e8fb09, type: 3}
-  parallelWorldMusic: {fileID: 8300000, guid: 0310bf9612f9bfd44888ebc54fcf73d2, type: 3}
-  normalWorldMusic: {fileID: 8300000, guid: f2dc70091343d804ebbacab04580a0eb, type: 3}
-  audioFadeTime: 0.5
-  worldLight: {fileID: 0}
-  normalLightIntensity: 100
-  parallelLightIntensity: 100
-  isParallelWorldActive: 0
-  isTransitioning: 0
-  isOnCooldown: 0
-  canSwitchToParallel: 1
---- !u!4 &1619295630
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1619295628}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 255.42365, y: 1916.7421, z: 0.1142619}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1636203941
 GameObject:
   m_ObjectHideFlags: 0
@@ -4622,57 +4561,6 @@ SpriteRenderer:
   m_WasSpriteAssigned: 1
   m_MaskInteraction: 0
   m_SpriteSortPoint: 0
---- !u!1 &1684782278
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 1684782280}
-  - component: {fileID: 1684782279}
-  m_Layer: 0
-  m_Name: DialogueManager
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!114 &1684782279
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1684782278}
-  m_Enabled: 1
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 194299da37191b04ca9b56be69214b5a, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  dialoguePanel: {fileID: 1497912715}
-  dialogueText: {fileID: 1121502846}
-  nameText: {fileID: 2000352886}
-  leftCharacterImage: {fileID: 155584106}
-  rightCharacterImage: {fileID: 387397995}
-  playerDefaultSprite: {fileID: 0}
-  npcDefaultSprite: {fileID: 0}
---- !u!4 &1684782280
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 1684782278}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 146.99501, y: 1909.5442, z: 0.0030562934}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children: []
-  m_Father: {fileID: 0}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &1696561681
 GameObject:
   m_ObjectHideFlags: 0
@@ -6628,8 +6516,6 @@ Transform:
 SceneRoots:
   m_ObjectHideFlags: 0
   m_Roots:
-  - {fileID: 1684782280}
-  - {fileID: 1619295630}
   - {fileID: 1973548057}
   - {fileID: 1499118280}
   - {fileID: 767245725}

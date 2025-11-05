@@ -3,8 +3,8 @@ using UnityEngine;
 public class PlayerSpawner : MonoBehaviour
 {
     [Header("Component Switching")]
-    public string componentToRemoveName; // Type name like "PlayerController"
-    public string componentToAddName;    // Type name like "Scene2PlayerController"
+    public string componentToRemoveName = "TutorialPlayerMovement";
+    public string componentToAddName = "PlayerMovement";
 
     void Start()
     {
@@ -30,6 +30,9 @@ public class PlayerSpawner : MonoBehaviour
             // Switch components
             SwitchPlayerComponents(player);
 
+            // Auto-activate UI in new scene
+            ActivateUIInNewScene();
+
             // Clear the saved spawn point
             PlayerPrefs.DeleteKey("SpawnPoint");
         }
@@ -51,8 +54,33 @@ public class PlayerSpawner : MonoBehaviour
         // Add new component by name
         if (!string.IsNullOrEmpty(componentToAddName))
         {
-            player.AddComponent(System.Type.GetType(componentToAddName));
-            Debug.Log("Added: " + componentToAddName);
+            System.Type componentType = System.Type.GetType(componentToAddName);
+            if (componentType != null)
+            {
+                player.AddComponent(componentType);
+                Debug.Log("Added: " + componentToAddName);
+            }
+            else
+            {
+                Debug.LogError("Component type not found: " + componentToAddName);
+            }
+        }
+    }
+
+    private void ActivateUIInNewScene()
+    {
+        // Find UIManager in the new scene and force activate UI
+        UIManager uiManager = FindObjectOfType<UIManager>();
+        if (uiManager != null)
+        {
+            // Use reflection to call the activation method
+            System.Reflection.MethodInfo method = uiManager.GetType().GetMethod("ActivateStatsSystem",
+                System.Reflection.BindingFlags.NonPublic | System.Reflection.BindingFlags.Instance);
+            if (method != null)
+            {
+                method.Invoke(uiManager, null);
+                Debug.Log("UI automatically activated in new scene");
+            }
         }
     }
 }

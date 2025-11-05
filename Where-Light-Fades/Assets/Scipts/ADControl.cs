@@ -3,13 +3,13 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 8f;
-    public float acceleration = 25f;
+    public float moveSpeed = 5f;
+    public float acceleration = 40f;
     public float deceleration = 30f;
 
     [Header("Jump Movement Settings")]
-    public float airMoveSpeedMultiplier = 0.7f; // 70% speed in air
-    public float airAccelerationMultiplier = 0.6f; // 60% acceleration in air
+    public float airMoveSpeedMultiplier = 0.7f; 
+    public float airAccelerationMultiplier = 0.6f; 
 
     private Rigidbody2D rb;
     private SpriteRenderer spriteRenderer;

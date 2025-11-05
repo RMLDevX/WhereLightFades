@@ -17,7 +17,7 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Life Drain Settings")]
     public float healthDrainRate = 1f; // HP lost per second
-    public bool enableLifeDrain = false; // Start disabled
+    public bool enableLifeDrain = false; 
 
     [Header("World Effects")]
     public bool isInParallelWorld = false;
@@ -56,16 +56,16 @@ public class PlayerStats : MonoBehaviour
     {
         Debug.Log("New scene loaded: " + scene.name);
 
-        // Reset all animations when new scene loads
+        
         ResetAllAnimations();
 
-        // Ensure player is in correct state
+        
         ResetPlayerState();
     }
 
     void ResetAllAnimations()
     {
-        // Find the animator on the player (could be on child objects)
+        
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
@@ -73,9 +73,6 @@ public class PlayerStats : MonoBehaviour
             animator.SetBool("isRunning", false);
             animator.SetBool("isJumping", false);
             animator.SetBool("isSlashing", false);
-            // Reset any other animation parameters here
-
-            // Force animator to update immediately
             animator.Rebind();
             animator.Update(0f);
         }
