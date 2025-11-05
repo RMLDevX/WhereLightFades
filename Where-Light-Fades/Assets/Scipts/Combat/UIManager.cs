@@ -6,14 +6,14 @@ public class UIManager : MonoBehaviour
 {
     public Slider healthBar;
     public Slider manaBar;
-    public GameObject statsPanel; // Reference to your UI panel
+    public GameObject statsPanel; 
 
     private bool statsActivated = false;
     private bool hasPressedF = false;
 
     void Start()
     {
-        // Hide UI immediately when game starts
+        
         if (statsPanel != null)
         {
             statsPanel.SetActive(false);
@@ -32,7 +32,7 @@ public class UIManager : MonoBehaviour
 
     void Update()
     {
-        // Activate stats and life drain on first F press
+        
         if (Input.GetKeyDown(KeyCode.F) && !hasPressedF)
         {
             hasPressedF = true;
@@ -52,7 +52,7 @@ public class UIManager : MonoBehaviour
 
     IEnumerator ActivateStatsSystemWithDelay()
     {
-        // Wait for 1 second before showing UI and activating drain
+        
         yield return new WaitForSeconds(1f);
 
         ActivateStatsSystem();
@@ -62,17 +62,17 @@ public class UIManager : MonoBehaviour
     {
         statsActivated = true;
 
-        // Show UI elements
+        
         if (statsPanel != null)
         {
             statsPanel.SetActive(true);
         }
 
-        // Ensure individual bars are visible
+        
         if (healthBar != null) healthBar.gameObject.SetActive(true);
         if (manaBar != null) manaBar.gameObject.SetActive(true);
 
-        // Enable life drain system
+        
         if (PlayerStats.Instance != null)
         {
             PlayerStats.Instance.enableLifeDrain = true;

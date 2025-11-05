@@ -17,7 +17,7 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Life Drain Settings")]
     public float healthDrainRate = 1f; // HP lost per second
-    public bool enableLifeDrain = false; 
+    public bool enableLifeDrain = false;
 
     [Header("World Effects")]
     public bool isInParallelWorld = false;
@@ -56,16 +56,12 @@ public class PlayerStats : MonoBehaviour
     {
         Debug.Log("New scene loaded: " + scene.name);
 
-        
         ResetAllAnimations();
-
-        
         ResetPlayerState();
     }
 
     void ResetAllAnimations()
     {
-        
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
@@ -224,11 +220,66 @@ public class PlayerStats : MonoBehaviour
 
     void Die()
     {
-        Debug.Log("Player Died!");
-        // Add death logic here (restart level, game over screen, etc.)
+        if (currentHealth > 0) return; // Prevent multiple calls
 
-        // When player dies, you might want to reload scene or go to game over
-        // SceneManager.LoadScene("GameOverScene");
+        Debug.Log("Die method called - Current Health: " + currentHealth);
+
+        // Disable all player controls
+        TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
+        if (movement != null)
+        {
+            movement.enabled = false;
+            Debug.Log("Movement disabled");
+        }
+
+        PlayerCombat combat = GetComponent<PlayerCombat>();
+        if (combat != null)
+        {
+            combat.enabled = false;
+            Debug.Log("Combat disabled");
+        }
+
+        PlayerJump jump = GetComponent<PlayerJump>();
+        if (jump != null)
+        {
+            jump.enabled = false;
+            Debug.Log("Jump disabled");
+        }
+
+        // Freeze the player in place
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.isKinematic = true; // This stops physics from affecting the player
+            rb.simulated = false; // This completely stops rigidbody simulation
+        }
+
+        // Keep collider enabled so player doesn't fall through ground
+        Collider2D collider = GetComponent<Collider2D>();
+        if (collider != null) collider.enabled = true;
+
+        // Trigger the death animation
+        Animator animator = GetComponentInChildren<Animator>();
+        if (animator != null)
+        {
+            Debug.Log("Animator found, triggering Die animation");
+            animator.SetTrigger("Die");
+
+            // Clear singleton and destroy
+            if (Instance == this)
+            {
+                Instance = null;
+            }
+
+            Destroy(gameObject, 2f);
+            Debug.Log("Destroy scheduled in 2 seconds");
+        }
+        else
+        {
+            Debug.LogError("No Animator found!");
+            Destroy(gameObject);
+        }
     }
 
     void OnDestroy()
