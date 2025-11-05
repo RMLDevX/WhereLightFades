@@ -3,8 +3,8 @@ using UnityEngine;
 public class PlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 5f;
-    public float acceleration = 40f;
+    public float moveSpeed = 3f;
+    public float acceleration = 30f;
     public float deceleration = 30f;
 
     [Header("Jump Movement Settings")]

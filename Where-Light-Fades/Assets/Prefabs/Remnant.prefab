@@ -161,8 +161,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 790610b8b05f06b4fb79828bee870d88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  healthRestore: 30
-  manaRestore: 30
+  healthRestore: 10
+  manaRestore: 10
   magnetRange: 3
   magnetSpeed: 8
   collectRange: 0.5

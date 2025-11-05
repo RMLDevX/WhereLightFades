@@ -3,8 +3,8 @@ using UnityEngine;
 public class TutorialPlayerMovement : MonoBehaviour
 {
     [Header("Movement Settings")]
-    public float moveSpeed = 8f;
-    public float acceleration = 25f;
+    public float moveSpeed = 3f;
+    public float acceleration = 3f;
     public float deceleration = 30f;
 
     [Header("Jump Movement Settings")]
