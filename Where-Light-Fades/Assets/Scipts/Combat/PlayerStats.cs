@@ -5,6 +5,9 @@ public class PlayerStats : MonoBehaviour
 {
     public static PlayerStats Instance; // Singleton pattern
 
+    [Header("UI")]
+    public GameObject deathPanel;
+
     [Header("Player Stats")]
     public float maxHealth = 100f;
     public float currentHealth = 100f;
@@ -221,6 +224,12 @@ public class PlayerStats : MonoBehaviour
     void Die()
     {
         if (currentHealth > 0) return; // Prevent multiple calls
+
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(true);
+            Time.timeScale = 0f; // optional freeze
+        }
 
         Debug.Log("Die method called - Current Health: " + currentHealth);
 
