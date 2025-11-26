@@ -6,9 +6,27 @@ public class KillZone : MonoBehaviour
     {
         if (collision.CompareTag("Player"))
         {
-            // Instant kill
-            if (PlayerStats.Instance != null)
-                PlayerStats.Instance.TakeDamage(999999f);
+            Debug.Log("Player entered KillZone");
+
+            PlayerStats playerStats = collision.GetComponent<PlayerStats>();
+            if (playerStats != null)
+            {
+                playerStats.TakeDamage(999999f);
+                Debug.Log("Damage applied to player");
+            }
+            else
+            {
+                // Fallback to singleton instance
+                if (PlayerStats.Instance != null)
+                {
+                    PlayerStats.Instance.TakeDamage(999999f);
+                    Debug.Log("Damage applied via singleton");
+                }
+                else
+                {
+                    Debug.LogError("PlayerStats instance not found!");
+                }
+            }
         }
     }
 }

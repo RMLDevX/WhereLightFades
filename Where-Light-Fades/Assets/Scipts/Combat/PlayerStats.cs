@@ -225,12 +225,6 @@ public class PlayerStats : MonoBehaviour
     {
         if (currentHealth > 0) return; // Prevent multiple calls
 
-        if (deathPanel != null)
-        {
-            deathPanel.SetActive(true);
-            Time.timeScale = 0f; // optional freeze
-        }
-
         Debug.Log("Die method called - Current Health: " + currentHealth);
 
         // Disable all player controls
@@ -260,13 +254,16 @@ public class PlayerStats : MonoBehaviour
         if (rb != null)
         {
             rb.velocity = Vector2.zero;
-            rb.isKinematic = true; // This stops physics from affecting the player
-            rb.simulated = false; // This completely stops rigidbody simulation
+            rb.isKinematic = true;
+            rb.simulated = false;
         }
 
-        // Keep collider enabled so player doesn't fall through ground
-        Collider2D collider = GetComponent<Collider2D>();
-        if (collider != null) collider.enabled = true;
+        // Show death panel
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(true);
+            Time.timeScale = 0f; // optional freeze
+        }
 
         // Trigger the death animation
         Animator animator = GetComponentInChildren<Animator>();
@@ -274,21 +271,20 @@ public class PlayerStats : MonoBehaviour
         {
             Debug.Log("Animator found, triggering Die animation");
             animator.SetTrigger("Die");
-
-            // Clear singleton and destroy
-            if (Instance == this)
-            {
-                Instance = null;
-            }
-
-            Destroy(gameObject, 2f);
-            Debug.Log("Destroy scheduled in 2 seconds");
         }
-        else
-        {
-            Debug.LogError("No Animator found!");
-            Destroy(gameObject);
-        }
+
+        // Don't destroy the player object immediately if you're using DontDestroyOnLoad
+        // Instead, handle scene resetting properly
+        Invoke("ResetGame", 2f);
+    }
+
+    void ResetGame()
+    {
+        // Reset time scale if you paused it
+        Time.timeScale = 1f;
+
+        // Reload the current scene
+        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
     }
 
     void OnDestroy()
