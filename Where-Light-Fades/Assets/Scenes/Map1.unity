@@ -140049,6 +140049,14 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   smoothness: 0.1
   offset: {x: 0, y: 1, z: -10}
+  minX: -10
+  maxX: 10
+  minY: -5
+  maxY: 5
+  showGizmos: 1
+  minBoundaryColor: {r: 1, g: 0.92156863, b: 0.015686275, a: 1}
+  maxBoundaryColor: {r: 1, g: 0, b: 0, a: 1}
+  cameraBoundsColor: {r: 0, g: 1, b: 1, a: 1}
 --- !u!1 &770893518
 GameObject:
   m_ObjectHideFlags: 0
