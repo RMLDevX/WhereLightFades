@@ -29,6 +29,7 @@ public class PlayerStats : MonoBehaviour
 
     private float previousMana;
 
+
     void Awake()
     {
         Debug.Log("PlayerStats Awake called - Instance: " + Instance);
@@ -262,7 +263,7 @@ public class PlayerStats : MonoBehaviour
         if (deathPanel != null)
         {
             deathPanel.SetActive(true);
-            Time.timeScale = 0f; // optional freeze
+            Time.timeScale = 0f;
         }
 
         // Trigger the death animation
