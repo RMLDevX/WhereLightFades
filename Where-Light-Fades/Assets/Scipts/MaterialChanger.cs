@@ -24,7 +24,6 @@ public class MaterialChanger : MonoBehaviour
     {
         if (!isChanging)
         {
-            // Switch material with delay
             if (worldManager.isParallelWorldActive && objectRenderer.material != parallelMaterial)
             {
                 StartCoroutine(ChangeMaterialWithDelay(parallelMaterial));

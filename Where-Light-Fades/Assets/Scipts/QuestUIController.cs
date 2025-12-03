@@ -1,18 +1,12 @@
-using System.Collections;
-using System.Collections.Generic;
 using UnityEngine;
 
-public class NewBehaviourScript : MonoBehaviour
+public class QuestUIController : MonoBehaviour
 {
-    // Start is called before the first frame update
-    void Start()
-    {
-        
-    }
+    public GameObject questScrollPanel;
 
-    // Update is called once per frame
-    void Update()
+    public void ToggleScroll()
     {
-        
+        bool isActive = questScrollPanel.activeSelf;
+        questScrollPanel.SetActive(!isActive);
     }
 }

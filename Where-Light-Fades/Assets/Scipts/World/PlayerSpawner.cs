@@ -81,6 +81,36 @@ public class PlayerSpawner : MonoBehaviour
                 method.Invoke(uiManager, null);
                 Debug.Log("UI automatically activated in new scene");
             }
+
+            // ALSO update the player reference in UI manager if needed
+            UpdateUIPlayerReferences(uiManager);
+        }
+    }
+
+    private void UpdateUIPlayerReferences(UIManager uiManager)
+    {
+        GameObject player = GameObject.FindGameObjectWithTag("Player");
+
+        // Try to set player reference through different methods
+        // Method 1: Using SerializedField (if applicable)
+        var uiManagerType = uiManager.GetType();
+        var playerField = uiManagerType.GetField("player",
+            System.Reflection.BindingFlags.NonPublic |
+            System.Reflection.BindingFlags.Public |
+            System.Reflection.BindingFlags.Instance);
+
+        if (playerField != null)
+        {
+            playerField.SetValue(uiManager, player);
+            Debug.Log("Updated player reference in UIManager");
+        }
+
+        // Method 2: Call a public setup method if it exists
+        var setupMethod = uiManagerType.GetMethod("SetupPlayerReferences");
+        if (setupMethod != null)
+        {
+            setupMethod.Invoke(uiManager, new object[] { player });
+            Debug.Log("Called SetupPlayerReferences method");
         }
     }
 }
