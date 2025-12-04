@@ -145172,11 +145172,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1350489332}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 63d0712a98e3d6a43913b57000d7db0c, type: 3}
+  m_Script: {fileID: 11500000, guid: 6275e88e60aca8341afab4e60f1fad7f, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  targetSceneName: Map1
-  spawnPointName: PlayerSpawner
 --- !u!1 &1370814778
 GameObject:
   m_ObjectHideFlags: 0
@@ -147576,6 +147574,10 @@ PrefabInstance:
     - target: {fileID: 8020923421243236681, guid: 8b7f0039b9d75604eb2f14b00027fe35, type: 3}
       propertyPath: m_Name
       value: Player (1)
+      objectReference: {fileID: 0}
+    - target: {fileID: 8453867651533817372, guid: 8b7f0039b9d75604eb2f14b00027fe35, type: 3}
+      propertyPath: m_SortingOrder
+      value: 0
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
