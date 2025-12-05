@@ -1,12 +1,14 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PlayerStats : MonoBehaviour
 {
-    public static PlayerStats Instance; // Singleton pattern
+    public static PlayerStats Instance;
 
     [Header("UI")]
     public GameObject deathPanel;
+    public Button restartButton;
 
     [Header("Player Stats")]
     public float maxHealth = 100f;
@@ -19,7 +21,7 @@ public class PlayerStats : MonoBehaviour
     public float slashManaCost = 0f;
 
     [Header("Life Drain Settings")]
-    public float healthDrainRate = 1f; // HP lost per second
+    public float healthDrainRate = 1f;
     public bool enableLifeDrain = false;
 
     [Header("World Effects")]
@@ -27,26 +29,37 @@ public class PlayerStats : MonoBehaviour
     public float parallelWorldHealthDrainMultiplier = 3f;
     public float parallelWorldManaDrainMultiplier = 2f;
 
-    private float previousMana;
+    [Header("Restart Settings")]
+    public int initialSceneIndex = 0;
+    public Vector3 initialPosition = Vector3.zero;
+    public bool useInitialPositionOnRestart = true;
 
+    private float previousMana;
+    private bool isDead = false;
+    private Vector3 respawnPosition;
+    private int respawnSceneIndex;
+
+    // Track if we're currently teleporting to a new scene
+    private bool isTeleporting = false;
+    private int targetSceneForTeleport = -1;
+    private Vector3 targetPositionForTeleport = Vector3.zero;
 
     void Awake()
     {
-        Debug.Log("PlayerStats Awake called - Instance: " + Instance);
-
-        // Make this persistent across scenes
         if (Instance == null)
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
-
-            // Subscribe to scene load event
             SceneManager.sceneLoaded += OnSceneLoaded;
-            Debug.Log("PlayerStats set as persistent instance");
+
+            // Set initial values
+            respawnSceneIndex = initialSceneIndex;
+            respawnPosition = initialPosition;
+
+            Debug.Log("PlayerStats initialized. Initial scene: " + initialSceneIndex + ", position: " + initialPosition);
         }
         else
         {
-            Debug.Log("Destroying duplicate PlayerStats");
             Destroy(gameObject);
         }
     }
@@ -54,14 +67,128 @@ public class PlayerStats : MonoBehaviour
     void Start()
     {
         previousMana = currentMana;
+
+        // Setup restart button
+        if (restartButton != null)
+        {
+            restartButton.onClick.RemoveAllListeners();
+            restartButton.onClick.AddListener(RestartGame);
+        }
+        else if (deathPanel != null)
+        {
+            restartButton = deathPanel.GetComponentInChildren<Button>();
+            if (restartButton != null)
+            {
+                restartButton.onClick.RemoveAllListeners();
+                restartButton.onClick.AddListener(RestartGame);
+            }
+        }
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log("New scene loaded: " + scene.name);
+        Debug.Log("Scene loaded: " + scene.name + " (Index: " + scene.buildIndex + ")");
+
+        // If we're teleporting to a specific scene/position
+        if (isTeleporting && scene.buildIndex == targetSceneForTeleport)
+        {
+            Debug.Log("Teleporting player to position: " + targetPositionForTeleport);
+
+            // Teleport the player to the target position
+            TeleportPlayerToPosition(targetPositionForTeleport);
+
+            // Reset teleport flags
+            isTeleporting = false;
+            targetSceneForTeleport = -1;
+            targetPositionForTeleport = Vector3.zero;
+        }
+        else
+        {
+            // Normal scene load - find spawn point
+            FindAndSetSpawnPoint(scene);
+        }
 
         ResetAllAnimations();
         ResetPlayerState();
+
+        // Make sure UI is hidden
+        if (deathPanel != null && deathPanel.activeSelf)
+        {
+            deathPanel.SetActive(false);
+        }
+
+        // Make sure the player GameObject is active and in the correct scene
+        EnsurePlayerInCorrectScene();
+    }
+
+    void FindAndSetSpawnPoint(Scene scene)
+    {
+        // Try to find spawn point in the scene
+        GameObject spawnPoint = GameObject.FindGameObjectWithTag("SpawnPoint");
+        if (spawnPoint != null)
+        {
+            TeleportPlayerToPosition(spawnPoint.transform.position);
+            respawnPosition = spawnPoint.transform.position;
+            respawnSceneIndex = scene.buildIndex;
+            Debug.Log("Found spawn point at: " + spawnPoint.transform.position);
+        }
+        else
+        {
+            // Try to find player start position
+            GameObject playerStart = GameObject.Find("PlayerStart");
+            if (playerStart != null)
+            {
+                TeleportPlayerToPosition(playerStart.transform.position);
+                respawnPosition = playerStart.transform.position;
+                respawnSceneIndex = scene.buildIndex;
+                Debug.Log("Found PlayerStart at: " + playerStart.transform.position);
+            }
+            else
+            {
+                // If no spawn found, use default position (0, 0, 0)
+                TeleportPlayerToPosition(Vector3.zero);
+                respawnPosition = Vector3.zero;
+                respawnSceneIndex = scene.buildIndex;
+                Debug.LogWarning("No spawn point found. Using (0, 0, 0)");
+            }
+        }
+    }
+
+    void TeleportPlayerToPosition(Vector3 position)
+    {
+        Debug.Log("Teleporting player to: " + position);
+
+        // Reset any physics state
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
+            rb.isKinematic = false;
+            rb.simulated = true;
+        }
+
+        // Set the position
+        transform.position = position;
+
+        // Force immediate position update
+        transform.hasChanged = true;
+    }
+
+    void EnsurePlayerInCorrectScene()
+    {
+        // Get the currently active scene
+        Scene currentScene = SceneManager.GetActiveScene();
+
+        // If player is not in the active scene, move it there
+        if (gameObject.scene != currentScene)
+        {
+            Debug.Log("Moving player from scene '" + gameObject.scene.name +
+                     "' to active scene '" + currentScene.name + "'");
+
+            // Move the player GameObject to the active scene
+            SceneManager.MoveGameObjectToScene(gameObject, currentScene);
+        }
     }
 
     void ResetAllAnimations()
@@ -69,51 +196,65 @@ public class PlayerStats : MonoBehaviour
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
-            Debug.Log("Resetting animations for new scene");
             animator.SetBool("isRunning", false);
             animator.SetBool("isJumping", false);
             animator.SetBool("isSlashing", false);
+            animator.ResetTrigger("Die");
             animator.Rebind();
             animator.Update(0f);
-        }
-        else
-        {
-            Debug.LogWarning("Animator not found when resetting animations");
         }
     }
 
     void ResetPlayerState()
     {
-        // Reset any movement or combat states
-        TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
-        PlayerJump jump = GetComponent<PlayerJump>();
-        PlayerCombat combat = GetComponent<PlayerCombat>();
+        isDead = false;
 
+        // Re-enable all player components
+        TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
         if (movement != null)
         {
+            movement.enabled = true;
             movement.SetMovement(true);
         }
 
-        // Ensure player is grounded and not in combat state
-        if (jump != null)
+        PlayerCombat combat = GetComponent<PlayerCombat>();
+        if (combat != null)
         {
-            // Jump state will reset automatically through ground detection
+            combat.enabled = true;
         }
 
-        // Reset any combat cooldowns or states if needed
+        PlayerJump jump = GetComponent<PlayerJump>();
+        if (jump != null)
+        {
+            jump.enabled = true;
+        }
+
+        // Reset Rigidbody
+        Rigidbody2D rb = GetComponent<Rigidbody2D>();
+        if (rb != null)
+        {
+            rb.velocity = Vector2.zero;
+            rb.isKinematic = false;
+            rb.simulated = true;
+        }
+
+        // Reset stats
+        currentHealth = maxHealth;
+        currentMana = maxMana;
+        enableLifeDrain = false;
+        isInParallelWorld = false;
     }
 
     void Update()
     {
-        // Check if mana was restored
+        if (isDead) return;
+
         CheckManaRestored();
 
-        // Only drain life if system is activated
         if (enableLifeDrain && currentHealth > 0)
         {
             float drainRate = healthDrainRate * Time.deltaTime;
 
-            // Apply multiplier if in parallel world
             if (isInParallelWorld)
             {
                 drainRate *= parallelWorldHealthDrainMultiplier;
@@ -128,13 +269,11 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
-        // Only drain mana if in parallel world AND system is activated
         if (isInParallelWorld && enableLifeDrain && currentMana > 0)
         {
             float manaDrain = parallelWorldManaDrainMultiplier * Time.deltaTime;
             currentMana = Mathf.Max(0, currentMana - manaDrain);
 
-            // Auto-switch to normal world when mana reaches 0
             if (currentMana <= 0)
             {
                 currentMana = 0;
@@ -142,13 +281,11 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
-        // Update previous mana for next frame
         previousMana = currentMana;
     }
 
     void CheckManaRestored()
     {
-        // If mana increased from 0 to positive, re-enable parallel world switching
         if (previousMana <= 0 && currentMana > 0)
         {
             EnableParallelWorldSwitching();
@@ -160,8 +297,6 @@ public class PlayerStats : MonoBehaviour
         if (isInParallelWorld)
         {
             Debug.Log("Mana depleted! Auto-switching to normal world");
-
-            // Find ParallelWorldManager and force switch to normal world
             ParallelWorldManager worldManager = FindObjectOfType<ParallelWorldManager>();
             if (worldManager != null && worldManager.isParallelWorldActive)
             {
@@ -197,7 +332,10 @@ public class PlayerStats : MonoBehaviour
 
     public void TakeDamage(float damage)
     {
+        if (isDead) return;
+
         currentHealth -= damage;
+
         if (currentHealth <= 0)
         {
             currentHealth = 0;
@@ -215,7 +353,6 @@ public class PlayerStats : MonoBehaviour
         float oldMana = currentMana;
         currentMana = Mathf.Min(currentMana + amount, maxMana);
 
-        // Manually check for mana restoration when using this method
         if (oldMana <= 0 && currentMana > 0)
         {
             EnableParallelWorldSwitching();
@@ -224,33 +361,22 @@ public class PlayerStats : MonoBehaviour
 
     void Die()
     {
-        if (currentHealth > 0) return; // Prevent multiple calls
+        if (isDead) return;
 
-        Debug.Log("Die method called - Current Health: " + currentHealth);
+        isDead = true;
+        Debug.Log("Player Died");
 
         // Disable all player controls
         TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
-        if (movement != null)
-        {
-            movement.enabled = false;
-            Debug.Log("Movement disabled");
-        }
+        if (movement != null) movement.enabled = false;
 
         PlayerCombat combat = GetComponent<PlayerCombat>();
-        if (combat != null)
-        {
-            combat.enabled = false;
-            Debug.Log("Combat disabled");
-        }
+        if (combat != null) combat.enabled = false;
 
         PlayerJump jump = GetComponent<PlayerJump>();
-        if (jump != null)
-        {
-            jump.enabled = false;
-            Debug.Log("Jump disabled");
-        }
+        if (jump != null) jump.enabled = false;
 
-        // Freeze the player in place
+        // Freeze the player
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
@@ -259,42 +385,88 @@ public class PlayerStats : MonoBehaviour
             rb.simulated = false;
         }
 
-        // Show death panel
-        if (deathPanel != null)
-        {
-            deathPanel.SetActive(true);
-            Time.timeScale = 0f;
-        }
-
-        // Trigger the death animation
+        // Trigger death animation
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
-            Debug.Log("Animator found, triggering Die animation");
             animator.SetTrigger("Die");
         }
 
-        // Don't destroy the player object immediately if you're using DontDestroyOnLoad
-        // Instead, handle scene resetting properly
-        Invoke("ResetGame", 2f);
+        // Show death panel after animation
+        Invoke("ShowDeathPanel", 1f);
     }
 
-    void ResetGame()
+    void ShowDeathPanel()
     {
-        // Reset time scale if you paused it
+        Time.timeScale = 0f;
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(true);
+
+            // Ensure restart button is properly set up
+            if (restartButton == null)
+            {
+                restartButton = deathPanel.GetComponentInChildren<Button>();
+                if (restartButton != null)
+                {
+                    restartButton.onClick.RemoveAllListeners();
+                    restartButton.onClick.AddListener(RestartGame);
+                }
+            }
+        }
+        else
+        {
+            RestartGame();
+        }
+    }
+
+    public void RestartGame()
+    {
+        Debug.Log("=== RESTART GAME ===");
+
+        // Reset time scale
         Time.timeScale = 1f;
 
-        // Reload the current scene
-        SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex);
+        // Hide death panel
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(false);
+        }
+
+        // Determine which scene and position to use
+        int targetScene = useInitialPositionOnRestart ? initialSceneIndex : respawnSceneIndex;
+        Vector3 targetPosition = useInitialPositionOnRestart ? initialPosition : respawnPosition;
+
+        Debug.Log("Target Scene: " + targetScene + ", Target Position: " + targetPosition);
+
+        // Set teleport flags
+        isTeleporting = true;
+        targetSceneForTeleport = targetScene;
+        targetPositionForTeleport = targetPosition;
+
+        // Load the target scene - this will trigger OnSceneLoaded
+        SceneManager.LoadScene(targetScene);
+    }
+
+    public void SetCheckpoint(Vector3 position)
+    {
+        respawnPosition = position;
+        respawnSceneIndex = SceneManager.GetActiveScene().buildIndex;
+        Debug.Log($"Checkpoint set at {position} in scene {respawnSceneIndex}");
+    }
+
+    public void SetInitialRestartSettings(int sceneIndex, Vector3 position)
+    {
+        initialSceneIndex = sceneIndex;
+        initialPosition = position;
+        Debug.Log($"Initial restart settings: Scene {sceneIndex}, Position {position}");
     }
 
     void OnDestroy()
     {
-        // Unsubscribe from event when destroyed to prevent memory leaks
         if (Instance == this)
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
-            Debug.Log("PlayerStats unsubscribed from scene events");
         }
     }
 }
