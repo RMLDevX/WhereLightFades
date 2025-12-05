@@ -22,7 +22,7 @@ public class MaterialChanger : MonoBehaviour
 
     void Update()
     {
-        if (!isChanging)
+        /*if (!isChanging)
         {
             if (worldManager.isParallelWorldActive && objectRenderer.material != parallelMaterial)
             {
@@ -32,7 +32,7 @@ public class MaterialChanger : MonoBehaviour
             {
                 StartCoroutine(ChangeMaterialWithDelay(normalMaterial));
             }
-        }
+        }*/
     }
 
     IEnumerator ChangeMaterialWithDelay(Material newMaterial)
