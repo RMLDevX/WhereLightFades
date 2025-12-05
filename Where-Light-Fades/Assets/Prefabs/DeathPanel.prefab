@@ -377,7 +377,7 @@ GameObject:
   - component: {fileID: 6414193389185742157}
   m_Layer: 5
   m_Name: DeathPanel
-  m_TagString: Untagged
+  m_TagString: DeathPanel
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0

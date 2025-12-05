@@ -289,6 +289,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aca6772001ab46c489fe1e6a2f420470, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
+  deathPanel: {fileID: 6919256793077578818, guid: 8102e7b14903a794facc63dc7b89bb2a, type: 3}
+  restartButton: {fileID: 0}
   maxHealth: 100
   currentHealth: 100
   maxMana: 100
@@ -300,3 +302,6 @@ MonoBehaviour:
   isInParallelWorld: 0
   parallelWorldHealthDrainMultiplier: 1
   parallelWorldManaDrainMultiplier: 1
+  initialSceneIndex: 0
+  initialPosition: {x: 0, y: 0, z: 0}
+  useInitialPositionOnRestart: 1

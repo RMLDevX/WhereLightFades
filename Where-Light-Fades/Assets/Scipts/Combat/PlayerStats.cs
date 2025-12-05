@@ -7,6 +7,7 @@ public class PlayerStats : MonoBehaviour
     public static PlayerStats Instance;
 
     [Header("UI")]
+    [Tooltip("If null, will search for GameObject with 'DeathPanel' tag")]
     public GameObject deathPanel;
     public Button restartButton;
 
@@ -68,19 +69,60 @@ public class PlayerStats : MonoBehaviour
     {
         previousMana = currentMana;
 
-        // Setup restart button
-        if (restartButton != null)
+        // Try to find death panel by tag if not assigned
+        if (deathPanel == null)
         {
-            restartButton.onClick.RemoveAllListeners();
-            restartButton.onClick.AddListener(RestartGame);
+            FindDeathPanelByTag();
         }
-        else if (deathPanel != null)
+
+        // Setup restart button
+        SetupRestartButton();
+    }
+
+    void FindDeathPanelByTag()
+    {
+        GameObject deathPanelObj = GameObject.FindGameObjectWithTag("DeathPanel");
+        if (deathPanelObj != null)
         {
+            deathPanel = deathPanelObj;
+            Debug.Log("Found DeathPanel by tag: " + deathPanel.name);
+        }
+        else
+        {
+            Debug.LogWarning("No GameObject with 'DeathPanel' tag found in the scene.");
+        }
+    }
+
+    void SetupRestartButton()
+    {
+        if (deathPanel != null)
+        {
+            // Try to get restart button from death panel first
             restartButton = deathPanel.GetComponentInChildren<Button>();
+
             if (restartButton != null)
             {
                 restartButton.onClick.RemoveAllListeners();
                 restartButton.onClick.AddListener(RestartGame);
+            }
+            else
+            {
+                Debug.LogWarning("No Button found in DeathPanel GameObject.");
+            }
+        }
+        else
+        {
+            // Try to find death panel by tag again
+            FindDeathPanelByTag();
+
+            if (deathPanel != null)
+            {
+                restartButton = deathPanel.GetComponentInChildren<Button>();
+                if (restartButton != null)
+                {
+                    restartButton.onClick.RemoveAllListeners();
+                    restartButton.onClick.AddListener(RestartGame);
+                }
             }
         }
     }
@@ -88,6 +130,13 @@ public class PlayerStats : MonoBehaviour
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
         Debug.Log("Scene loaded: " + scene.name + " (Index: " + scene.buildIndex + ")");
+
+        // Find death panel in the new scene by tag
+        if (deathPanel == null || !deathPanel.activeInHierarchy)
+        {
+            FindDeathPanelByTag();
+            SetupRestartButton();
+        }
 
         // If we're teleporting to a specific scene/position
         if (isTeleporting && scene.buildIndex == targetSceneForTeleport)
@@ -392,6 +441,12 @@ public class PlayerStats : MonoBehaviour
             animator.SetTrigger("Die");
         }
 
+        // Make sure we have a reference to the death panel
+        if (deathPanel == null)
+        {
+            FindDeathPanelByTag();
+        }
+
         // Show death panel after animation
         Invoke("ShowDeathPanel", 1f);
     }
@@ -399,6 +454,13 @@ public class PlayerStats : MonoBehaviour
     void ShowDeathPanel()
     {
         Time.timeScale = 0f;
+
+        // Make sure we have the death panel
+        if (deathPanel == null)
+        {
+            FindDeathPanelByTag();
+        }
+
         if (deathPanel != null)
         {
             deathPanel.SetActive(true);
@@ -416,6 +478,7 @@ public class PlayerStats : MonoBehaviour
         }
         else
         {
+            Debug.LogWarning("DeathPanel not found! Restarting game immediately.");
             RestartGame();
         }
     }
