@@ -291,8 +291,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   deathPanel: {fileID: 6919256793077578818, guid: 8102e7b14903a794facc63dc7b89bb2a, type: 3}
   restartButton: {fileID: 0}
+  deathPanelDelay: 0
   maxHealth: 100
-  currentHealth: 100
+  _currentHealth: 100
   maxMana: 100
   currentMana: 100
   slashDamage: 50

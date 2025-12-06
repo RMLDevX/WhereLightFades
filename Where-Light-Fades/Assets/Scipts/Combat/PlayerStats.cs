@@ -1,6 +1,7 @@
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using UnityEngine.UI;
+using System.Collections;
 
 public class PlayerStats : MonoBehaviour
 {
@@ -10,12 +11,12 @@ public class PlayerStats : MonoBehaviour
     [Tooltip("If null, will search for GameObject with 'DeathPanel' tag")]
     public GameObject deathPanel;
     public Button restartButton;
+    [Tooltip("Delay before showing death panel (for death animation)")]
+    public float deathPanelDelay = 1.5f;
 
     [Header("Player Stats")]
     public float maxHealth = 100f;
-    public float currentHealth = 100f;
     public float maxMana = 50f;
-    public float currentMana = 50f;
 
     [Header("Combat Settings")]
     public float slashDamage = 20f;
@@ -23,73 +24,102 @@ public class PlayerStats : MonoBehaviour
 
     [Header("Life Drain Settings")]
     public float healthDrainRate = 1f;
-    public bool enableLifeDrain = false;
 
     [Header("World Effects")]
-    public bool isInParallelWorld = false;
     public float parallelWorldHealthDrainMultiplier = 3f;
     public float parallelWorldManaDrainMultiplier = 2f;
 
     [Header("Restart Settings")]
     public int initialSceneIndex = 0;
     public Vector3 initialPosition = Vector3.zero;
-    public bool useInitialPositionOnRestart = true;
+
+    // Runtime variables
+    [HideInInspector] public float currentHealth;
+    [HideInInspector] public float currentMana;
+    [HideInInspector] public bool enableLifeDrain = false;
+    [HideInInspector] public bool isInParallelWorld = false;
 
     private float previousMana;
     private bool isDead = false;
-    private Vector3 respawnPosition;
-    private int respawnSceneIndex;
-
-    // Track if we're currently teleporting to a new scene
-    private bool isTeleporting = false;
-    private int targetSceneForTeleport = -1;
-    private Vector3 targetPositionForTeleport = Vector3.zero;
+    private static bool isCompleteRestart = false;
 
     void Awake()
     {
-        if (Instance == null)
-        {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-            SceneManager.sceneLoaded += OnSceneLoaded;
-
-            // Set initial values
-            respawnSceneIndex = initialSceneIndex;
-            respawnPosition = initialPosition;
-
-            Debug.Log("PlayerStats initialized. Initial scene: " + initialSceneIndex + ", position: " + initialPosition);
-        }
-        else
+        // Handle singleton
+        if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
+            return;
         }
+
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        SceneManager.sceneLoaded += OnSceneLoaded;
+
+        // Initialize stats
+        InitializeStats();
+
+        Debug.Log($"PlayerStats created. Scene: {initialSceneIndex}, Position: {initialPosition}");
+    }
+
+    void InitializeStats()
+    {
+        currentHealth = maxHealth;
+        currentMana = maxMana;
+        enableLifeDrain = false;
+        isInParallelWorld = false;
+        isDead = false;
+        previousMana = maxMana;
     }
 
     void Start()
     {
-        previousMana = currentMana;
+        InitializeUI();
+    }
 
-        // Try to find death panel by tag if not assigned
+    void InitializeUI()
+    {
         if (deathPanel == null)
         {
-            FindDeathPanelByTag();
+            FindDeathPanel();
         }
 
-        // Setup restart button
+        if (deathPanel != null)
+        {
+            deathPanel.SetActive(false);
+        }
+
         SetupRestartButton();
     }
 
-    void FindDeathPanelByTag()
+    void FindDeathPanel()
     {
+        if (deathPanel != null && !deathPanel.activeInHierarchy)
+        {
+            return;
+        }
+
+        // Search in Canvas
+        Canvas canvas = FindObjectOfType<Canvas>();
+        if (canvas != null)
+        {
+            foreach (Transform child in canvas.transform)
+            {
+                if (child.CompareTag("DeathPanel"))
+                {
+                    deathPanel = child.gameObject;
+                    Debug.Log($"Found DeathPanel: {deathPanel.name}");
+                    return;
+                }
+            }
+        }
+
+        // Search by tag
         GameObject deathPanelObj = GameObject.FindGameObjectWithTag("DeathPanel");
         if (deathPanelObj != null)
         {
             deathPanel = deathPanelObj;
-            Debug.Log("Found DeathPanel by tag: " + deathPanel.name);
-        }
-        else
-        {
-            Debug.LogWarning("No GameObject with 'DeathPanel' tag found in the scene.");
+            Debug.Log($"Found DeathPanel by tag: {deathPanel.name}");
         }
     }
 
@@ -97,117 +127,57 @@ public class PlayerStats : MonoBehaviour
     {
         if (deathPanel != null)
         {
-            // Try to get restart button from death panel first
-            restartButton = deathPanel.GetComponentInChildren<Button>();
+            restartButton = deathPanel.GetComponentInChildren<Button>(true);
 
             if (restartButton != null)
             {
                 restartButton.onClick.RemoveAllListeners();
-                restartButton.onClick.AddListener(RestartGame);
-            }
-            else
-            {
-                Debug.LogWarning("No Button found in DeathPanel GameObject.");
-            }
-        }
-        else
-        {
-            // Try to find death panel by tag again
-            FindDeathPanelByTag();
-
-            if (deathPanel != null)
-            {
-                restartButton = deathPanel.GetComponentInChildren<Button>();
-                if (restartButton != null)
-                {
-                    restartButton.onClick.RemoveAllListeners();
-                    restartButton.onClick.AddListener(RestartGame);
-                }
+                restartButton.onClick.AddListener(FullGameRestart);
+                Debug.Log($"Restart button setup: {restartButton.name}");
             }
         }
     }
 
     void OnSceneLoaded(Scene scene, LoadSceneMode mode)
     {
-        Debug.Log("Scene loaded: " + scene.name + " (Index: " + scene.buildIndex + ")");
+        Debug.Log($"Scene loaded: {scene.name} (Index: {scene.buildIndex})");
 
-        // Find death panel in the new scene by tag
-        if (deathPanel == null || !deathPanel.activeInHierarchy)
+        // Re-initialize UI
+        InitializeUI();
+
+        // If this is a complete restart, position player at initial position
+        if (isCompleteRestart && scene.buildIndex == initialSceneIndex)
         {
-            FindDeathPanelByTag();
-            SetupRestartButton();
+            StartCoroutine(SetupAfterRestart());
         }
-
-        // If we're teleporting to a specific scene/position
-        if (isTeleporting && scene.buildIndex == targetSceneForTeleport)
-        {
-            Debug.Log("Teleporting player to position: " + targetPositionForTeleport);
-
-            // Teleport the player to the target position
-            TeleportPlayerToPosition(targetPositionForTeleport);
-
-            // Reset teleport flags
-            isTeleporting = false;
-            targetSceneForTeleport = -1;
-            targetPositionForTeleport = Vector3.zero;
-        }
-        else
-        {
-            // Normal scene load - find spawn point
-            FindAndSetSpawnPoint(scene);
-        }
-
-        ResetAllAnimations();
-        ResetPlayerState();
-
-        // Make sure UI is hidden
-        if (deathPanel != null && deathPanel.activeSelf)
-        {
-            deathPanel.SetActive(false);
-        }
-
-        // Make sure the player GameObject is active and in the correct scene
-        EnsurePlayerInCorrectScene();
     }
 
-    void FindAndSetSpawnPoint(Scene scene)
+    IEnumerator SetupAfterRestart()
     {
-        // Try to find spawn point in the scene
-        GameObject spawnPoint = GameObject.FindGameObjectWithTag("SpawnPoint");
-        if (spawnPoint != null)
+        // Wait for all scene objects to initialize
+        yield return null;
+        yield return null;
+
+        // Reset everything
+        ResetAllAnimations();
+        ResetPlayerComponents();
+        TeleportPlayerToPosition(initialPosition);
+
+        // Force normal world
+        ParallelWorldManager worldManager = FindObjectOfType<ParallelWorldManager>();
+        if (worldManager != null && worldManager.isParallelWorldActive)
         {
-            TeleportPlayerToPosition(spawnPoint.transform.position);
-            respawnPosition = spawnPoint.transform.position;
-            respawnSceneIndex = scene.buildIndex;
-            Debug.Log("Found spawn point at: " + spawnPoint.transform.position);
+            worldManager.ForceSwitchToNormalWorld();
         }
-        else
-        {
-            // Try to find player start position
-            GameObject playerStart = GameObject.Find("PlayerStart");
-            if (playerStart != null)
-            {
-                TeleportPlayerToPosition(playerStart.transform.position);
-                respawnPosition = playerStart.transform.position;
-                respawnSceneIndex = scene.buildIndex;
-                Debug.Log("Found PlayerStart at: " + playerStart.transform.position);
-            }
-            else
-            {
-                // If no spawn found, use default position (0, 0, 0)
-                TeleportPlayerToPosition(Vector3.zero);
-                respawnPosition = Vector3.zero;
-                respawnSceneIndex = scene.buildIndex;
-                Debug.LogWarning("No spawn point found. Using (0, 0, 0)");
-            }
-        }
+
+        // Clear the restart flag
+        isCompleteRestart = false;
+
+        Debug.Log("=== RESTART SETUP COMPLETE ===");
     }
 
     void TeleportPlayerToPosition(Vector3 position)
     {
-        Debug.Log("Teleporting player to: " + position);
-
-        // Reset any physics state
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
@@ -217,27 +187,8 @@ public class PlayerStats : MonoBehaviour
             rb.simulated = true;
         }
 
-        // Set the position
         transform.position = position;
-
-        // Force immediate position update
-        transform.hasChanged = true;
-    }
-
-    void EnsurePlayerInCorrectScene()
-    {
-        // Get the currently active scene
-        Scene currentScene = SceneManager.GetActiveScene();
-
-        // If player is not in the active scene, move it there
-        if (gameObject.scene != currentScene)
-        {
-            Debug.Log("Moving player from scene '" + gameObject.scene.name +
-                     "' to active scene '" + currentScene.name + "'");
-
-            // Move the player GameObject to the active scene
-            SceneManager.MoveGameObjectToScene(gameObject, currentScene);
-        }
+        Debug.Log($"Player teleported to: {position}");
     }
 
     void ResetAllAnimations()
@@ -245,20 +196,21 @@ public class PlayerStats : MonoBehaviour
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
+            animator.Rebind();
+            animator.Update(0f);
             animator.SetBool("isRunning", false);
             animator.SetBool("isJumping", false);
             animator.SetBool("isSlashing", false);
             animator.ResetTrigger("Die");
-            animator.Rebind();
-            animator.Update(0f);
+            animator.Play("Idle", 0, 0f);
         }
     }
 
-    void ResetPlayerState()
+    void ResetPlayerComponents()
     {
         isDead = false;
 
-        // Re-enable all player components
+        // Enable movement
         TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
         if (movement != null)
         {
@@ -278,20 +230,22 @@ public class PlayerStats : MonoBehaviour
             jump.enabled = true;
         }
 
-        // Reset Rigidbody
+        // Reset physics
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
             rb.velocity = Vector2.zero;
+            rb.angularVelocity = 0f;
             rb.isKinematic = false;
             rb.simulated = true;
         }
 
-        // Reset stats
-        currentHealth = maxHealth;
-        currentMana = maxMana;
-        enableLifeDrain = false;
-        isInParallelWorld = false;
+        // Re-enable collider if it was disabled
+        Collider2D col = GetComponent<Collider2D>();
+        if (col != null)
+        {
+            col.enabled = true;
+        }
     }
 
     void Update()
@@ -300,6 +254,7 @@ public class PlayerStats : MonoBehaviour
 
         CheckManaRestored();
 
+        // Health drain
         if (enableLifeDrain && currentHealth > 0)
         {
             float drainRate = healthDrainRate * Time.deltaTime;
@@ -318,6 +273,7 @@ public class PlayerStats : MonoBehaviour
             }
         }
 
+        // Mana drain
         if (isInParallelWorld && enableLifeDrain && currentMana > 0)
         {
             float manaDrain = parallelWorldManaDrainMultiplier * Time.deltaTime;
@@ -345,7 +301,6 @@ public class PlayerStats : MonoBehaviour
     {
         if (isInParallelWorld)
         {
-            Debug.Log("Mana depleted! Auto-switching to normal world");
             ParallelWorldManager worldManager = FindObjectOfType<ParallelWorldManager>();
             if (worldManager != null && worldManager.isParallelWorldActive)
             {
@@ -366,7 +321,6 @@ public class PlayerStats : MonoBehaviour
     public void SetParallelWorldState(bool inParallelWorld)
     {
         isInParallelWorld = inParallelWorld;
-        Debug.Log("Parallel world state: " + inParallelWorld);
     }
 
     public bool UseMana(float amount)
@@ -384,6 +338,7 @@ public class PlayerStats : MonoBehaviour
         if (isDead) return;
 
         currentHealth -= damage;
+        Debug.Log($"Player took {damage} damage. Health: {currentHealth}");
 
         if (currentHealth <= 0)
         {
@@ -413,9 +368,9 @@ public class PlayerStats : MonoBehaviour
         if (isDead) return;
 
         isDead = true;
-        Debug.Log("Player Died");
+        Debug.Log("=== PLAYER DIED ===");
 
-        // Disable all player controls
+        // Disable controls
         TutorialPlayerMovement movement = GetComponent<TutorialPlayerMovement>();
         if (movement != null) movement.enabled = false;
 
@@ -425,7 +380,7 @@ public class PlayerStats : MonoBehaviour
         PlayerJump jump = GetComponent<PlayerJump>();
         if (jump != null) jump.enabled = false;
 
-        // Freeze the player
+        // Freeze physics
         Rigidbody2D rb = GetComponent<Rigidbody2D>();
         if (rb != null)
         {
@@ -434,95 +389,110 @@ public class PlayerStats : MonoBehaviour
             rb.simulated = false;
         }
 
-        // Trigger death animation
+        // Death animation
         Animator animator = GetComponentInChildren<Animator>();
         if (animator != null)
         {
             animator.SetTrigger("Die");
         }
 
-        // Make sure we have a reference to the death panel
-        if (deathPanel == null)
-        {
-            FindDeathPanelByTag();
-        }
-
-        // Show death panel after animation
-        Invoke("ShowDeathPanel", 1f);
+        StartCoroutine(ShowDeathPanelCoroutine());
     }
 
-    void ShowDeathPanel()
+    IEnumerator ShowDeathPanelCoroutine()
     {
-        Time.timeScale = 0f;
+        yield return new WaitForSeconds(deathPanelDelay);
 
-        // Make sure we have the death panel
         if (deathPanel == null)
         {
-            FindDeathPanelByTag();
+            FindDeathPanel();
         }
 
         if (deathPanel != null)
         {
+            Time.timeScale = 0f;
             deathPanel.SetActive(true);
+            Debug.Log("DeathPanel shown");
 
-            // Ensure restart button is properly set up
             if (restartButton == null)
             {
-                restartButton = deathPanel.GetComponentInChildren<Button>();
-                if (restartButton != null)
-                {
-                    restartButton.onClick.RemoveAllListeners();
-                    restartButton.onClick.AddListener(RestartGame);
-                }
+                SetupRestartButton();
+            }
+
+            if (restartButton != null)
+            {
+                restartButton.interactable = true;
             }
         }
         else
         {
-            Debug.LogWarning("DeathPanel not found! Restarting game immediately.");
-            RestartGame();
+            Debug.LogError("DeathPanel not found! Restarting immediately.");
+            FullGameRestart();
         }
     }
 
-    public void RestartGame()
+    /// <summary>
+    /// Complete game restart - Destroys all persistent objects and reloads from scratch
+    /// </summary>
+    public void FullGameRestart()
     {
-        Debug.Log("=== RESTART GAME ===");
+        Debug.Log("=== FULL GAME RESTART INITIATED ===");
+        StartCoroutine(RestartEntireGame());
+    }
 
+    IEnumerator RestartEntireGame()
+    {
         // Reset time scale
         Time.timeScale = 1f;
 
         // Hide death panel
-        if (deathPanel != null)
+        if (deathPanel != null && deathPanel.activeSelf)
         {
             deathPanel.SetActive(false);
         }
 
-        // Determine which scene and position to use
-        int targetScene = useInitialPositionOnRestart ? initialSceneIndex : respawnSceneIndex;
-        Vector3 targetPosition = useInitialPositionOnRestart ? initialPosition : respawnPosition;
+        // Set restart flag
+        isCompleteRestart = true;
 
-        Debug.Log("Target Scene: " + targetScene + ", Target Position: " + targetPosition);
+        // Reset stats
+        InitializeStats();
 
-        // Set teleport flags
-        isTeleporting = true;
-        targetSceneForTeleport = targetScene;
-        targetPositionForTeleport = targetPosition;
+        Debug.Log("Destroying all DontDestroyOnLoad objects...");
 
-        // Load the target scene - this will trigger OnSceneLoaded
-        SceneManager.LoadScene(targetScene);
-    }
+        // Find and destroy ALL DontDestroyOnLoad objects
+        GameObject[] allObjects = FindObjectsOfType<GameObject>();
+        foreach (GameObject obj in allObjects)
+        {
+            // Check if object is in DontDestroyOnLoad scene
+            if (obj.scene.name == "DontDestroyOnLoad" || obj.scene.buildIndex == -1)
+            {
+                Debug.Log($"Destroying persistent object: {obj.name}");
+                Destroy(obj);
+            }
+        }
 
-    public void SetCheckpoint(Vector3 position)
-    {
-        respawnPosition = position;
-        respawnSceneIndex = SceneManager.GetActiveScene().buildIndex;
-        Debug.Log($"Checkpoint set at {position} in scene {respawnSceneIndex}");
+        // Clear the singleton reference
+        Instance = null;
+
+        // Force unload unused assets
+        yield return Resources.UnloadUnusedAssets();
+
+        // Force garbage collection
+        System.GC.Collect();
+
+        Debug.Log($"Loading initial scene: {initialSceneIndex}");
+
+        // Load the initial scene with Single mode to completely reload
+        SceneManager.LoadScene(initialSceneIndex, LoadSceneMode.Single);
+
+        Debug.Log("=== GAME RESTART COMPLETE - Fresh Start ===");
     }
 
     public void SetInitialRestartSettings(int sceneIndex, Vector3 position)
     {
         initialSceneIndex = sceneIndex;
         initialPosition = position;
-        Debug.Log($"Initial restart settings: Scene {sceneIndex}, Position {position}");
+        Debug.Log($"Initial settings: Scene {sceneIndex}, Position {position}");
     }
 
     void OnDestroy()
@@ -530,6 +500,7 @@ public class PlayerStats : MonoBehaviour
         if (Instance == this)
         {
             SceneManager.sceneLoaded -= OnSceneLoaded;
+            Instance = null;
         }
     }
 }
