@@ -207,17 +207,17 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b19153cd005561b468daca286a28fe88, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  jumpForce: 7
+  jumpForce: 6
   jumpTime: 0.1
   coyoteTime: 0.1
   jumpBufferTime: 0.1
-  groundCheckDistance: 0.2
-  maxGroundAngle: 45
+  groundCheckDistance: 0
+  maxGroundAngle: 0
   groundLayer:
     serializedVersion: 2
     m_Bits: 8
-  ceilingCheckDistance: 0.1
-  gravityScale: 3
+  ceilingCheckDistance: 0
+  gravityScale: 2
   fallGravityMultiplier: 1
 --- !u!114 &663488112700376992
 MonoBehaviour:
@@ -289,20 +289,19 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: aca6772001ab46c489fe1e6a2f420470, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  deathPanel: {fileID: 6919256793077578818, guid: 8102e7b14903a794facc63dc7b89bb2a, type: 3}
+  deathPanel: {fileID: 0}
   restartButton: {fileID: 0}
   deathPanelDelay: 0
   maxHealth: 100
-  _currentHealth: 100
   maxMana: 100
-  currentMana: 100
   slashDamage: 50
   slashManaCost: 5
   healthDrainRate: 0.5
+  parallelWorldHealthDrainMultiplier: 2
+  parallelWorldManaDrainMultiplier: 1
+  initialSceneIndex: 2
+  initialPosition: {x: 250.09, y: 1916.25, z: 0}
+  currentHealth: 0
+  currentMana: 100
   enableLifeDrain: 1
   isInParallelWorld: 0
-  parallelWorldHealthDrainMultiplier: 1
-  parallelWorldManaDrainMultiplier: 1
-  initialSceneIndex: 0
-  initialPosition: {x: 0, y: 0, z: 0}
-  useInitialPositionOnRestart: 1
